@@ -1,7 +1,6 @@
-[package]
-name = "serde-meta"
-version = "0.1.0"
-authors = ["Thomas Lahmer <791550+Tomok@users.noreply.github.com>"]
-edition = "2018"
-
-[dependencies]
+[workspace]
+members = [
+    "serde_meta",
+    "serde_meta_derive",
+    "tests"
+]

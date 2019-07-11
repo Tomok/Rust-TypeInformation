@@ -1,0 +1,9 @@
+[package]
+name = "tests"
+version = "0.1.0"
+authors = ["Thomas Lahmer <791550+Tomok@users.noreply.github.com>"]
+edition = "2018"
+
+[dependencies]
+serde_meta_derive = { path = "../serde_meta_derive" }
+
