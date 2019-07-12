@@ -1,6 +1,8 @@
 extern crate proc_macro;
 extern crate proc_macro2;
 use proc_macro::TokenStream;
+use quote::quote;
+use syn;
 
 extern crate serde_meta;
 
@@ -14,7 +16,38 @@ pub fn derive_serde_meta(_item: TokenStream) -> TokenStream {
 ///context of unit tests.
 fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
     //TODO: Implement something usefull here
-    item
+    let input: syn::DeriveInput = syn::parse2(item).unwrap();
+
+    println!("{}: {:#?}", input.ident, input.data);
+    let ident = input.ident;
+    println!("#ident = {}", quote! { #ident });
+    let gen = match input.data {
+        syn::Data::Struct(dataStruct) => derive_struct(&ident, dataStruct),
+        _ => panic!("Not implemented"),
+    };
+    quote! {
+        use serde_meta;
+        impl serde_meta::SerdeMeta for #ident {
+            fn meta() -> serde_meta::TypeInformation {
+                #gen
+            }
+        }
+    }
+}
+
+fn derive_struct(ident: &syn::Ident, dataStruct: syn::DataStruct) -> proc_macro2::TokenStream {
+    let def = quote! { "abc"};
+    let strident = format!("{}", ident);
+    match dataStruct.fields {
+        syn::Fields::Named(f) => panic!("Not implemented for {:#?}", f),
+        syn::Fields::Unnamed(f) => panic!("Not implemented"),
+        syn::Fields::Unit => {
+            let res = quote! {
+                TypeInformation::UnitStructValue{ name: #strident }
+            };
+            res
+        }
+    }
 }
 
 #[cfg(test)]
@@ -24,17 +57,15 @@ mod test {
     use quote::quote;
 
     #[test]
-    fn test_derive_serde_empty_struct() {
-        let input = quote! { struct A{} };
+    fn test_derive_serde_unit_struct() {
+        let input = quote! { struct A; };
         let res = internal_derive_serde_meta(input);
         let expectation = quote! {
-            use serde_meta::SerdeMeta;
-            impl SerdeMeta for A {
-                use serde_meta;
+            use serde_meta;
+            impl serde_meta::SerdeMeta for A {
                 fn meta() -> serde_meta::TypeInformation {
-                    TypeInformation::TupleStructValue {
-                        name: "A",
-                        inner_types: []
+                    TypeInformation::UnitStructValue {
+                        name: "A"
                     }
                 }
             }

@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 serde-meta = { path = "../serde_meta"}
-syn = "0.15"
+syn = { version = "0.15", features = ["derive", "parsing", "printing", "visit", "proc-macro", "extra-traits"] }
 quote = "0.6"
 proc-macro2 = "0.4"
 

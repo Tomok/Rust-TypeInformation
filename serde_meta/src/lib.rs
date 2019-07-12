@@ -31,7 +31,9 @@ pub enum TypeInformation {
     },
 
     UnitValue(),
-    UnitStructValue(),
+    UnitStructValue {
+        name: &'static str,
+    },
     UnitVariant(),
 
     NewTypeStructValue {
