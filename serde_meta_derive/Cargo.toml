@@ -1,5 +1,5 @@
 [package]
-name = "serde_meta_derive"
+name = "serde-meta-derive"
 version = "0.1.0"
 authors = ["Thomas Lahmer <791550+Tomok@users.noreply.github.com>"]
 edition = "2018"
