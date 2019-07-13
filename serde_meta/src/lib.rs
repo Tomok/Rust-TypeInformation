@@ -67,6 +67,7 @@ pub enum TypeInformation {
     },
 
     StructValue {
+        name: &'static str,
         fields: &'static [Field],
     },
     StructVariant {
@@ -92,11 +93,15 @@ mod tests {
             name: "a",
             inner_type: &TEST_STRUCT,
         }];
-        static TEST_STRUCT: TypeInformation = StructValue { fields: FIELDS };
+        static TEST_STRUCT: TypeInformation = StructValue {
+            name: &"A",
+            fields: FIELDS
+        };
 
         #[test]
         fn test_structs_can_reference_themselves() {
             if let StructValue {
+                name: _,
                 fields: [field_struct],
             } = TEST_STRUCT
             {

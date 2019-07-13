@@ -39,14 +39,41 @@ fn derive_struct(ident: &syn::Ident, dataStruct: syn::DataStruct) -> proc_macro2
     let def = quote! { "abc"};
     let strident = format!("{}", ident);
     match dataStruct.fields {
-        syn::Fields::Named(f) => panic!("Not implemented for {:#?}", f),
-        syn::Fields::Unnamed(f) => panic!("Not implemented"),
-        syn::Fields::Unit => {
+        syn::Fields::Named(f) => {
+            let fields = derive_fields_named(f);
             let res = quote! {
-                TypeInformation::UnitStructValue{ name: #strident }
+                serde_meta::TypeInformation::StructValue {
+                    name: #strident,
+                    fields: #fields
+                }
             };
             res
         }
+        syn::Fields::Unnamed(f) => panic!("Not implemented"),
+        syn::Fields::Unit => {
+            let res = quote! {
+                serde_meta::TypeInformation::UnitStructValue{ name: #strident }
+            };
+            res
+        }
+    }
+}
+
+fn derive_fields_named(fields: syn::FieldsNamed) -> proc_macro2::TokenStream {
+    let fields_iter = fields.named.iter().map(|f| {
+        let ident = &f.ident;
+        let type_info = 1;//TODO
+        let map_res = quote! {
+            Field {
+                name: #ident,
+                inner_type: #type_info,
+            }
+        };
+        map_res
+    });
+
+    quote! {
+        &[#(#fields_iter),*]
     }
 }
 
@@ -64,8 +91,26 @@ mod test {
             use serde_meta;
             impl serde_meta::SerdeMeta for A {
                 fn meta() -> serde_meta::TypeInformation {
-                    TypeInformation::UnitStructValue {
+                    serde_meta::TypeInformation::UnitStructValue {
                         name: "A"
+                    }
+                }
+            }
+        };
+        assert_eq!(res.to_string(), expectation.to_string());
+    }
+
+    #[test]
+    fn test_derive_serde_empty_struct() {
+        let input = quote! { struct A {} };
+        let res = internal_derive_serde_meta(input);
+        let expectation = quote! {
+            use serde_meta;
+            impl serde_meta::SerdeMeta for A {
+                fn meta() -> serde_meta::TypeInformation {
+                    serde_meta::TypeInformation::StructValue {
+                        name: "A",
+                        fields: &[]
                     }
                 }
             }
