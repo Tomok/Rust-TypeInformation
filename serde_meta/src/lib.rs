@@ -1,8 +1,10 @@
+#[derive(Debug, PartialEq, Eq)]
 pub struct Field {
     pub name: &'static str,
     pub inner_type: &'static TypeInformation,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum TypeInformation {
     BoolValue(),
 
