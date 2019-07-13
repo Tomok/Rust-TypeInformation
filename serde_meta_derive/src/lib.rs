@@ -26,7 +26,6 @@ fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::To
         _ => panic!("Not implemented"),
     };
     quote! {
-        use serde_meta;
         impl serde_meta::SerdeMeta for #ident {
             fn meta() -> serde_meta::TypeInformation {
                 #gen
@@ -88,7 +87,6 @@ mod test {
         let input = quote! { struct A; };
         let res = internal_derive_serde_meta(input);
         let expectation = quote! {
-            use serde_meta;
             impl serde_meta::SerdeMeta for A {
                 fn meta() -> serde_meta::TypeInformation {
                     serde_meta::TypeInformation::UnitStructValue {
@@ -105,7 +103,6 @@ mod test {
         let input = quote! { struct A {} };
         let res = internal_derive_serde_meta(input);
         let expectation = quote! {
-            use serde_meta;
             impl serde_meta::SerdeMeta for A {
                 fn meta() -> serde_meta::TypeInformation {
                     serde_meta::TypeInformation::StructValue {
