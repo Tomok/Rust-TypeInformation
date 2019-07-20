@@ -95,7 +95,7 @@ mod tests {
         }];
         static TEST_STRUCT: TypeInformation = StructValue {
             name: &"A",
-            fields: FIELDS
+            fields: FIELDS,
         };
 
         #[test]

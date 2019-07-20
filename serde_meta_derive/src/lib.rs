@@ -22,7 +22,7 @@ fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::To
     let ident = input.ident;
     println!("#ident = {}", quote! { #ident });
     let gen = match input.data {
-        syn::Data::Struct(dataStruct) => derive_struct(&ident, dataStruct),
+        syn::Data::Struct(data_struct) => derive_struct(&ident, data_struct),
         _ => panic!("Not implemented"),
     };
     quote! {
@@ -34,10 +34,10 @@ fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::To
     }
 }
 
-fn derive_struct(ident: &syn::Ident, dataStruct: syn::DataStruct) -> proc_macro2::TokenStream {
-    let def = quote! { "abc"};
+fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> proc_macro2::TokenStream {
+    let def = quote! { "abc" };
     let strident = format!("{}", ident);
-    match dataStruct.fields {
+    match data_struct.fields {
         syn::Fields::Named(f) => {
             let fields = derive_fields_named(f);
             let res = quote! {
@@ -61,7 +61,7 @@ fn derive_struct(ident: &syn::Ident, dataStruct: syn::DataStruct) -> proc_macro2
 fn derive_fields_named(fields: syn::FieldsNamed) -> proc_macro2::TokenStream {
     let fields_iter = fields.named.iter().map(|f| {
         let ident = &f.ident;
-        let type_info = 1;//TODO
+        let type_info = 1; //TODO
         let map_res = quote! {
             Field {
                 name: #ident,
