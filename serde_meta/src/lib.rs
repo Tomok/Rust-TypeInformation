@@ -76,7 +76,7 @@ pub enum TypeInformation {
 }
 
 pub trait SerdeMeta {
-    fn meta() -> TypeInformation;
+    fn meta() -> &'static TypeInformation;
 }
 
 #[cfg(test)]
