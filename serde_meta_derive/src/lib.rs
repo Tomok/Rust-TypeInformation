@@ -90,7 +90,39 @@ fn derive_fields_named(fields: syn::FieldsNamed) -> proc_macro2::TokenStream {
     }
 }
 
+fn handle_simple_type(type_name: &str) -> Option<proc_macro2::TokenStream> {
+    match type_name {
+        "bool" => Some(quote! { serde_meta::TypeInformation::BoolValue() }),
+        "i8" => Some(quote! { serde_meta::TypeInformation::I8Value() }),
+        "i16" => Some(quote! { serde_meta::TypeInformation::I16Value() }),
+        "i32" => Some(quote! { serde_meta::TypeInformation::I32Value() }),
+        "i64" => Some(quote! { serde_meta::TypeInformation::I64Value() }),
+        "i128" => Some(quote! { serde_meta::TypeInformation::I128Value() }),
+
+        "u8" => Some(quote! { serde_meta::TypeInformation::U8Value() }),
+        "u16" => Some(quote! { serde_meta::TypeInformation::U16Value() }),
+        "u32" => Some(quote! { serde_meta::TypeInformation::U32Value() }),
+        "u64" => Some(quote! { serde_meta::TypeInformation::U64Value() }),
+        "u128" => Some(quote! { serde_meta::TypeInformation::U128Value() }),
+
+        "f32" => Some(quote! { serde_meta::TypeInformation::F32Value() }),
+        "f64" => Some(quote! { serde_meta::TypeInformation::F64Value() }),
+
+        "char" => Some(quote! { serde_meta::TypeInformation::CharValue() }),
+
+        "str" => Some(quote! { serde_meta::TypeInformation::StringValue() }),
+        _ => None
+    }
+}
+
 fn path_to_meta(path: &syn::Path) -> proc_macro2::TokenStream {
+    if path.segments.len() == 1 {
+        //could be a basic type
+        let simple_type_res = handle_simple_type(&path.segments.first().unwrap().value().ident.to_string());
+        if let Some(res) = simple_type_res {
+            return res;
+        }
+    }
     let path_name = build_static_variable_path(&path);
     let res = quote! { #path_name };
     res
