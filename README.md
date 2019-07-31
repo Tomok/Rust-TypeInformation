@@ -3,6 +3,9 @@
 
 ** THIS IS CURRENTLY NOT IN A USABLE STATE **
 
+
+[![Build Status](https://travis-ci.org/Tomok/serde-meta.svg?branch=master)](https://travis-ci.org/Tomok/serde-meta)
+
 This library can be used to extend structures with meta information allowing
 to query them for their fields at runtime.
 
