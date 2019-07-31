@@ -1,7 +1,9 @@
 # serde-meta
 **serde-meta is a framework to get runtime information about rust types**
 
-This library can be used to extend structures with metha information allowing
+** THIS IS CURRENTLY NOT IN A USABLE STATE **
+
+This library can be used to extend structures with meta information allowing
 to query them for their fields at runtime.
 
 *Note:* This provides read only access only.
