@@ -11,7 +11,7 @@ pub fn derive_serde_meta(_item: TokenStream) -> TokenStream {
     internal_derive_serde_meta(_item.into()).into()
 }
 
-fn build_static_variable_name_str(ident: &ToString) -> String {
+fn build_static_variable_name_str(ident: &dyn ToString) -> String {
     format!("_{}_META_INFO", ident.to_string())
 }
 
