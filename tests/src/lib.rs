@@ -6,6 +6,7 @@ mod tests {
     mod test_derive_u32_field {
         use super::*;
 
+        #[allow(unused)] //dummy struct just to check meta information generated for it
         #[derive(serde_meta_derive::SerdeMeta)]
         struct A {
             f: u32,
@@ -24,6 +25,7 @@ mod tests {
             }
         }
     }
+
     mod test_derive_empty_struct {
         use super::*;
 
@@ -49,6 +51,7 @@ mod tests {
         #[derive(serde_meta_derive::SerdeMeta)]
         struct B;
 
+        #[allow(unused)] //dummy struct just to check meta information generated for it
         #[derive(serde_meta_derive::SerdeMeta)]
         struct A {
             f: B,
