@@ -72,7 +72,16 @@ fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> proc_macro
             };
             res
         }
-        syn::Fields::Unnamed(f) => panic!("Not implemented"),
+        syn::Fields::Unnamed(f) => {
+            let fields = derive_fields_unnamed(f);
+            let res = quote! {
+                serde_meta::TypeInformation::TupleStructValue {
+                    name: #strident,
+                    inner_types: #fields
+                }
+            };
+            res
+        }
         syn::Fields::Unit => {
             let res = quote! {
                 serde_meta::TypeInformation::UnitStructValue{ name: #strident }
@@ -87,6 +96,14 @@ fn derive_fields_named(fields: syn::FieldsNamed) -> proc_macro2::TokenStream {
 
     quote! {
         &[#(#fields_iter),*]
+    }
+}
+
+fn derive_fields_unnamed(fields: syn::FieldsUnnamed) -> proc_macro2::TokenStream {
+    let fields_iter = fields.unnamed.iter().map(|f| type_to_meta(&f.ty));
+
+    quote! {
+        &[#(&#fields_iter),*]
     }
 }
 
@@ -129,13 +146,17 @@ fn path_to_meta(path: &syn::Path) -> proc_macro2::TokenStream {
     res
 }
 
+fn type_to_meta(ty: &syn::Type) -> proc_macro2::TokenStream {
+    match ty {
+        syn::Type::Path(p) => path_to_meta(&p.path),
+        _ => panic!("Not implemented"),
+    }
+}
+
 fn derive_named_field(field: &syn::Field) -> proc_macro2::TokenStream {
     let x = field.ident.clone(); //TODO: is clone realy the only option here?
     let ident = format!("{}", x.unwrap());
-    let type_info = match &field.ty {
-        syn::Type::Path(p) => path_to_meta(&p.path),
-        _ => panic!("Not implemented"),
-    };
+    let type_info = type_to_meta(&field.ty);
     let map_res = quote! {
         Field {
             name: #ident,
