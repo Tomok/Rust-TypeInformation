@@ -1,4 +1,4 @@
-//#[cfg(test)]
+#[cfg(test)]
 mod tests {
     use serde_meta::*;
     use serde_meta_derive;
