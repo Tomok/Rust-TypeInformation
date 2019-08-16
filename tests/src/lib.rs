@@ -70,4 +70,26 @@ mod tests {
             }
         }
     }
+
+    mod test_derive_multiple_unnamed_fields_struct {
+        use super::*;
+
+        #[allow(unused)]
+        #[derive(serde_meta_derive::SerdeMeta)]
+        struct A(u8, u16, u32);
+
+        #[test]
+        fn test() {
+            let meta = A::meta();
+            if let TypeInformation::TupleStructValue { name, inner_types } = meta {
+                assert_eq!(&"A", name);
+                assert_eq!(3, inner_types.len());
+                assert_eq!(&TypeInformation::U8Value(), inner_types[0]);
+                assert_eq!(&TypeInformation::U16Value(), inner_types[1]);
+                assert_eq!(&TypeInformation::U32Value(), inner_types[2]);
+            } else {
+                panic!("Expected TupleStructValue, but got {:#?}", meta);
+            }
+        }
+    }
 }
