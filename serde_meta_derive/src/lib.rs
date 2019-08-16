@@ -24,11 +24,11 @@ fn build_static_variable_path(path: &syn::Path) -> syn::Path {
     let mut res = path.clone();
     let item = res.segments.pop().unwrap();
     let last_value = item.value().ident.clone();
-    let new_value = build_static_variable_name(& last_value);
+    let new_value = build_static_variable_name(&last_value);
     let mut v = item.into_value();
     v.ident = new_value;
     res.segments.push(v);
-    assert!(res.segments.last().unwrap().value().ident == build_static_variable_name(& last_value));
+    assert!(res.segments.last().unwrap().value().ident == build_static_variable_name(&last_value));
     res
 }
 
@@ -111,14 +111,15 @@ fn handle_simple_type(type_name: &str) -> Option<proc_macro2::TokenStream> {
         "char" => Some(quote! { serde_meta::TypeInformation::CharValue() }),
 
         "str" => Some(quote! { serde_meta::TypeInformation::StringValue() }),
-        _ => None
+        _ => None,
     }
 }
 
 fn path_to_meta(path: &syn::Path) -> proc_macro2::TokenStream {
     if path.segments.len() == 1 {
         //could be a basic type
-        let simple_type_res = handle_simple_type(&path.segments.first().unwrap().value().ident.to_string());
+        let simple_type_res =
+            handle_simple_type(&path.segments.first().unwrap().value().ident.to_string());
         if let Some(res) = simple_type_res {
             return res;
         }
@@ -129,7 +130,7 @@ fn path_to_meta(path: &syn::Path) -> proc_macro2::TokenStream {
 }
 
 fn derive_named_field(field: &syn::Field) -> proc_macro2::TokenStream {
-    let x = field.ident.clone();//TODO: is clone realy the only option here?
+    let x = field.ident.clone(); //TODO: is clone realy the only option here?
     let ident = format!("{}", x.unwrap());
     let type_info = match &field.ty {
         syn::Type::Path(p) => path_to_meta(&p.path),
@@ -143,7 +144,6 @@ fn derive_named_field(field: &syn::Field) -> proc_macro2::TokenStream {
     };
     map_res
 }
-
 
 #[cfg(test)]
 mod test {
