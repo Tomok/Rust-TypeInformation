@@ -111,8 +111,8 @@ mod tests {
                 assert_eq!("f", fields[0].name);
                 if let TypeInformation::TupleValue { inner_types } = fields[0].inner_type {
                     assert_eq!(3, inner_types.len());
-                    for t in inner_types {
-                        assert_eq(&TypeInformation::U8Value, x);
+                    for &t in inner_types.iter() {
+                        assert_eq!(&TypeInformation::U8Value(), t);
                     }
                 } else {
                     panic!("Expected TupleValue, but got {:#?}", fields[0].inner_type);
