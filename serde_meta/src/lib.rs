@@ -5,6 +5,23 @@ pub struct Field {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+pub enum EnumVariantType {
+    UnitVariant(),
+    TupleVariant {
+        fields: &'static [&'static TypeInformation],
+    },
+    StructVariant {
+        fields: &'static [Field],
+    },
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct EnumVariant {
+    pub name: &'static str,
+    pub inner_type: EnumVariantType,
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum TypeInformation {
     BoolValue(),
 
@@ -36,7 +53,6 @@ pub enum TypeInformation {
     UnitStructValue {
         name: &'static str,
     },
-    UnitVariant(),
 
     NewTypeStructValue {
         inner_type: &'static TypeInformation,
@@ -59,10 +75,6 @@ pub enum TypeInformation {
         name: &'static str,
         inner_types: &'static [&'static TypeInformation],
     },
-    TupleVariantValue {
-        name: &'static str,
-        inner_types: &'static [&'static TypeInformation],
-    },
 
     MapValue {
         key_type: &'static TypeInformation,
@@ -73,8 +85,14 @@ pub enum TypeInformation {
         name: &'static str,
         fields: &'static [Field],
     },
-    StructVariant {
-        fields: &'static [Field],
+
+    ///EnumValue means that an enum may be contained
+    ///Note that SERDE does not know this type, as it does
+    ///not need to transfer the information, that a enum was
+    ///used, just which value it had.
+    EnumValue {
+        name: &'static str,
+        possible_variants: &'static [EnumVariant],
     },
 }
 

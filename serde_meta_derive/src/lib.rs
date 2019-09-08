@@ -45,7 +45,11 @@ fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::To
     let ident = input.ident;
     let gen = match input.data {
         syn::Data::Struct(data_struct) => derive_struct(&ident, data_struct),
-        _ => panic!("Not implemented"),
+        syn::Data::Enum(data_enum) => derive_enum(&ident, data_enum),
+        _ => panic!(
+            "internal_derive_serde_meta: Not implemented for {:#?}",
+            input.data
+        ),
     };
     let meta_info_name_ident = build_static_variable_name(&ident);
     let res = quote! {
@@ -61,9 +65,64 @@ fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::To
     res
 }
 
+fn derive_enum(ident: &syn::Ident, data_enum: syn::DataEnum) -> proc_macro2::TokenStream {
+    let strident = format!("{}", ident);
+    let variants = derive_enum_variants(data_enum.variants);
+    quote! {
+        serde_meta::TypeInformation::EnumValue {
+            name: #strident,
+            possible_variants: #variants
+        }
+    }
+}
+
+fn derive_enum_variants(
+    variants: syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>,
+) -> proc_macro2::TokenStream {
+    let variants_iter = variants.iter().map(|v| derive_enum_variant(v));
+
+    quote! {
+        &[#(#variants_iter),*]
+    }
+}
+
+fn derive_enum_variant(variant: &syn::Variant) -> proc_macro2::TokenStream {
+    let strident = format!("{}", variant.ident);
+    let inner_type = match &variant.fields {
+        syn::Fields::Named(f) => {
+            let fields = derive_fields_named(f);
+            quote! {
+                serde_meta::EnumVariantType::StructVariant {
+                    fields: #fields
+                }
+            }
+        }
+        syn::Fields::Unnamed(f) => {
+            let fields = derive_fields_unnamed(f);
+            quote! {
+                serde_meta::EnumVariantType::TupleVariant{
+                    fields: #fields
+                }
+            }
+        }
+        syn::Fields::Unit => {
+            quote! {
+                serde_meta::EnumVariantType::UnitVariant()
+            }
+        }
+    };
+
+    quote! {
+        serde_meta::EnumVariant {
+            name: #strident,
+            inner_type: #inner_type,
+        }
+    }
+}
+
 fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> proc_macro2::TokenStream {
     let strident = format!("{}", ident);
-    match data_struct.fields {
+    match &data_struct.fields {
         syn::Fields::Named(f) => {
             let fields = derive_fields_named(f);
             let res = quote! {
@@ -93,7 +152,7 @@ fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> proc_macro
     }
 }
 
-fn derive_fields_named(fields: syn::FieldsNamed) -> proc_macro2::TokenStream {
+fn derive_fields_named(fields: &syn::FieldsNamed) -> proc_macro2::TokenStream {
     let fields_iter = fields.named.iter().map(|f| derive_named_field(f));
 
     quote! {
@@ -101,7 +160,7 @@ fn derive_fields_named(fields: syn::FieldsNamed) -> proc_macro2::TokenStream {
     }
 }
 
-fn derive_fields_unnamed(fields: syn::FieldsUnnamed) -> proc_macro2::TokenStream {
+fn derive_fields_unnamed(fields: &syn::FieldsUnnamed) -> proc_macro2::TokenStream {
     let fields_iter = fields.unnamed.iter().map(|f| type_to_meta(&f.ty));
 
     quote! {
@@ -175,7 +234,7 @@ fn type_to_meta(ty: &syn::Type) -> proc_macro2::TokenStream {
     match ty {
         syn::Type::Path(p) => path_to_meta(&p.path),
         syn::Type::Array(a) => array_to_meta(&a),
-        _ => panic!("Not implemented"),
+        _ => panic!("type_to_meta: Not implemented for {:#?}", ty),
     }
 }
 

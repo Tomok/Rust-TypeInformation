@@ -122,4 +122,63 @@ mod tests {
             }
         }
     }
+
+    mod test_derive_enum {
+        use super::*;
+
+        #[allow(unused)]
+        #[derive(serde_meta_derive::SerdeMeta)]
+        enum A {
+            IntVal(i32),
+            StructVal { field: bool },
+            UnitVal,
+        }
+
+        #[test]
+        fn test() {
+            let meta = A::meta();
+            if let TypeInformation::EnumValue {
+                name,
+                possible_variants,
+            } = meta
+            {
+                assert_eq!(&"A", name);
+                assert_eq!(3, possible_variants.len());
+
+                assert_eq!("IntVal", possible_variants[0].name);
+                if let EnumVariantType::TupleVariant { fields: x } = possible_variants[0].inner_type
+                {
+                    assert_eq!(1, x.len());
+                    assert_eq!(&TypeInformation::I32Value(), x[0]);
+                } else {
+                    panic!(
+                        "Expected TupleVariant, but found {:#?}",
+                        possible_variants[0].inner_type
+                    );
+                }
+
+                assert_eq!("StructVal", possible_variants[1].name);
+                if let EnumVariantType::StructVariant { fields: x } =
+                    possible_variants[1].inner_type
+                {
+                    assert_eq!(1, x.len());
+                    assert_eq!(&TypeInformation::BoolValue(), x[0].inner_type);
+                    assert_eq!("field", x[0].name);
+                } else {
+                    panic!(
+                        "Expected StructVariant, but found {:#?}",
+                        possible_variants[0].inner_type
+                    );
+                }
+
+                assert_eq!("UnitVal", possible_variants[2].name);
+                assert_eq!(
+                    EnumVariantType::UnitVariant(),
+                    possible_variants[2].inner_type
+                )
+            } else {
+                panic!("Expected EnumValue but got {:#?}", meta);
+            }
+        }
+    }
 }
