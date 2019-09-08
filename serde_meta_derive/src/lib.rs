@@ -1,6 +1,8 @@
 extern crate proc_macro;
 extern crate proc_macro2;
 use proc_macro::TokenStream;
+use std::convert::TryInto;
+
 use quote::quote;
 use syn;
 
@@ -146,9 +148,33 @@ fn path_to_meta(path: &syn::Path) -> proc_macro2::TokenStream {
     res
 }
 
+fn array_to_meta(a: &syn::TypeArray) -> proc_macro2::TokenStream {
+    if let syn::Expr::Lit(syn::ExprLit {
+        attrs: _,
+        lit: syn::Lit::Int(lit),
+    }) = &a.len
+    {
+        let l = lit.value();
+        let t = type_to_meta(&*a.elem);
+        let size: usize = l
+            .try_into()
+            .unwrap_or_else(|s| panic!("Array size to big: {:#?}", s));
+        let fields_iter = std::iter::repeat(t).take(size);
+        quote! {
+            serde_meta::TypeInformation::TupleValue { inner_types: &[#(&#fields_iter),*] }
+        }
+    } else {
+        panic!(
+            "Only integer literals are supported as array length right now, but found a {:#?}",
+            a.len
+        );
+    }
+}
+
 fn type_to_meta(ty: &syn::Type) -> proc_macro2::TokenStream {
     match ty {
         syn::Type::Path(p) => path_to_meta(&p.path),
+        syn::Type::Array(a) => array_to_meta(&a),
         _ => panic!("Not implemented"),
     }
 }

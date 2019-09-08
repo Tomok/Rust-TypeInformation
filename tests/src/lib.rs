@@ -92,4 +92,34 @@ mod tests {
             }
         }
     }
+
+    mod test_derive_array_struct {
+        use super::*;
+
+        #[allow(unused)]
+        #[derive(serde_meta_derive::SerdeMeta)]
+        struct A {
+            f: [u8; 3],
+        }
+
+        #[test]
+        fn test() {
+            let meta = A::meta();
+            if let TypeInformation::StructValue { name, fields } = meta {
+                assert_eq!(&"A", name);
+                assert_eq!(1, fields.len());
+                assert_eq!("f", fields[0].name);
+                if let TypeInformation::TupleValue { inner_types } = fields[0].inner_type {
+                    assert_eq!(3, inner_types.len());
+                    for &t in inner_types.iter() {
+                        assert_eq!(&TypeInformation::U8Value(), t);
+                    }
+                } else {
+                    panic!("Expected TupleValue, but got {:#?}", fields[0].inner_type);
+                }
+            } else {
+                panic!("Expected StructValue, but got {:#?}", meta);
+            }
+        }
+    }
 }

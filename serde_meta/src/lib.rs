@@ -49,6 +49,9 @@ pub enum TypeInformation {
         inner_type: &'static TypeInformation,
     },
 
+    ///TupleValue used for tuples, also used for
+    ///arrays with known length, to be able to reflect that
+    ///information
     TupleValue {
         inner_types: &'static [&'static TypeInformation],
     },
