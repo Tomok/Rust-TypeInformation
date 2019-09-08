@@ -7,8 +7,8 @@ pub struct Field {
 #[derive(Debug, PartialEq, Eq)]
 pub enum EnumVariantType {
     UnitVariant(),
-    TupleVariantValue {
-        inner_types: &'static [&'static TypeInformation],
+    TupleVariant {
+        fields: &'static [&'static TypeInformation],
     },
     StructVariant {
         fields: &'static [Field],
@@ -17,8 +17,8 @@ pub enum EnumVariantType {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct EnumVariant {
-    name: &'static str,
-    inner_type: EnumVariantType,
+    pub name: &'static str,
+    pub inner_type: EnumVariantType,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -91,6 +91,7 @@ pub enum TypeInformation {
     ///not need to transfer the information, that a enum was
     ///used, just which value it had.
     EnumValue {
+        name: &'static str,
         possible_variants: &'static [EnumVariant],
     },
 }
