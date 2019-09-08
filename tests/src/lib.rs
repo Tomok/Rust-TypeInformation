@@ -122,4 +122,35 @@ mod tests {
             }
         }
     }
+
+    mod test_derive_enum {
+        use super::*;
+
+        #[allow(unused)]
+        #[derive(serde_meta_derive::SerdeMeta)]
+        enum A {
+            IntVal(i32),
+            StructVal { field: bool },
+            UnitVal(),
+        }
+
+        #[test]
+        fn test() {
+            let meta = A::meta();
+            if let TypeInformation::EnumValue {
+                name,
+                possible_variants,
+            } = meta
+            {
+                assert_eq!(&"A", name);
+                assert_eq!(3, possible_variants.len());
+                assert_eq!("IntVal", possible_variants[0].name);
+                assert_eq!("StructVal", possible_variants[1].name);
+                assert_eq!("UnitVal", possible_variants[2].name);
+            //Todo: check inner types
+            } else {
+                panic!("Expected EnumValue but got {:#?}", meta);
+            }
+        }
+    }
 }
