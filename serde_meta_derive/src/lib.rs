@@ -45,7 +45,7 @@ fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::To
     let ident = input.ident;
     let gen = match input.data {
         syn::Data::Struct(data_struct) => derive_struct(&ident, data_struct),
-        _ => panic!("Not implemented"),
+        _ => panic!("internal_derive_serde_meta: Not implemented for {:#?}", input.data),
     };
     let meta_info_name_ident = build_static_variable_name(&ident);
     let res = quote! {
@@ -175,7 +175,7 @@ fn type_to_meta(ty: &syn::Type) -> proc_macro2::TokenStream {
     match ty {
         syn::Type::Path(p) => path_to_meta(&p.path),
         syn::Type::Array(a) => array_to_meta(&a),
-        _ => panic!("Not implemented"),
+        _ => panic!("type_to_meta: Not implemented for {:#?}", ty),
     }
 }
 
