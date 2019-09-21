@@ -234,6 +234,7 @@ fn type_to_meta(ty: &syn::Type) -> proc_macro2::TokenStream {
     match ty {
         syn::Type::Path(p) => path_to_meta(&p.path),
         syn::Type::Array(a) => array_to_meta(&a),
+        syn::Type::Reference(syn::TypeReference { elem: t, .. }) => type_to_meta(&*t),
         _ => panic!("type_to_meta: Not implemented for {:#?}", ty),
     }
 }
