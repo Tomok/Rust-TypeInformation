@@ -209,8 +209,8 @@ fn path_to_meta(path: &syn::Path) -> proc_macro2::TokenStream {
 
 fn array_to_meta(a: &syn::TypeArray) -> proc_macro2::TokenStream {
     if let syn::Expr::Lit(syn::ExprLit {
-        attrs: _,
         lit: syn::Lit::Int(lit),
+        ..
     }) = &a.len
     {
         let l = lit.value();
