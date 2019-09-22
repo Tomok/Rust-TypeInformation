@@ -123,6 +123,35 @@ mod tests {
         }
     }
 
+    mod test_derive_array_ref {
+        use super::*;
+
+        #[allow(unused)]
+        #[derive(serde_meta_derive::SerdeMeta)]
+        struct A<'a> {
+            f: &'a [u16],
+        }
+
+        #[test]
+        fn test() {
+            let meta = A::meta();
+            if let TypeInformation::StructValue { name, fields } = meta {
+                assert_eq!(&"A", name);
+                assert_eq!(1, fields.len());
+                assert_eq!("f", fields[0].name);
+                if let TypeInformation::SeqValue { inner_type } = fields[0].inner_type {
+                    //as if let adds a reference, to the reference in SeqValue.inner_type,
+                    // a check against &&TypeInformation::U16Value is necessary`:w
+                    assert_eq!(&&TypeInformation::U16Value(), inner_type);
+                } else {
+                    panic!("Expected SeqValue, but got {:#?}", fields[0].inner_type);
+                }
+            } else {
+                panic!("Expected StructValue, but got {:#?}", meta);
+            }
+        }
+    }
+
     mod test_derive_enum {
         use super::*;
 

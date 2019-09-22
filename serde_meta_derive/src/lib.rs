@@ -43,6 +43,16 @@ fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::To
 
     //println!("Input {}: {:#?}", input.ident, input.data);
     let ident = input.ident;
+
+    let lifetimes: Vec<&syn::Lifetime> = input.generics.lifetimes().map(|x| &x.lifetime).collect();
+    let has_lifetimes = !lifetimes.is_empty();
+
+    let lifet = if has_lifetimes {
+        quote! {<#(#lifetimes),*>}
+    } else {
+        quote! {}
+    };
+
     let gen = match input.data {
         syn::Data::Struct(data_struct) => derive_struct(&ident, data_struct),
         syn::Data::Enum(data_enum) => derive_enum(&ident, data_enum),
@@ -55,7 +65,7 @@ fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::To
     let res = quote! {
         pub static #meta_info_name_ident: TypeInformation = #gen;
 
-        impl SerdeMeta for #ident {
+        impl #lifet SerdeMeta for #ident #lifet {
             fn meta() -> &'static serde_meta::TypeInformation {
                 &#meta_info_name_ident
             }
@@ -234,6 +244,13 @@ fn type_to_meta(ty: &syn::Type) -> proc_macro2::TokenStream {
     match ty {
         syn::Type::Path(p) => path_to_meta(&p.path),
         syn::Type::Array(a) => array_to_meta(&a),
+        syn::Type::Reference(syn::TypeReference { elem: t, .. }) => type_to_meta(&*t),
+        syn::Type::Slice(syn::TypeSlice { elem: t, .. }) => {
+            let inner = type_to_meta(&*t);
+            quote! {
+                serde_meta::TypeInformation::SeqValue{ inner_type: &#inner }
+            }
+        }
         _ => panic!("type_to_meta: Not implemented for {:#?}", ty),
     }
 }
