@@ -128,8 +128,8 @@ mod tests {
 
         #[allow(unused)]
         #[derive(serde_meta_derive::SerdeMeta)]
-        struct A {
-            f: &[u8],
+        struct A<'a> {
+            f: &'a [u16],
         }
 
         #[test]
@@ -140,7 +140,9 @@ mod tests {
                 assert_eq!(1, fields.len());
                 assert_eq!("f", fields[0].name);
                 if let TypeInformation::SeqValue { inner_type } = fields[0].inner_type {
-                    assert_eq!(&TypeInformation::U8Value(), inner_type);
+                    //as if let adds a reference, to the reference in SeqValue.inner_type,
+                    // a check against &&TypeInformation::U16Value is necessary`:w
+                    assert_eq!(&&TypeInformation::U16Value(), inner_type);
                 } else {
                     panic!("Expected SeqValue, but got {:#?}", fields[0].inner_type);
                 }

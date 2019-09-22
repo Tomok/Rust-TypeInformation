@@ -245,6 +245,12 @@ fn type_to_meta(ty: &syn::Type) -> proc_macro2::TokenStream {
         syn::Type::Path(p) => path_to_meta(&p.path),
         syn::Type::Array(a) => array_to_meta(&a),
         syn::Type::Reference(syn::TypeReference { elem: t, .. }) => type_to_meta(&*t),
+        syn::Type::Slice(syn::TypeSlice { elem: t, .. }) => {
+            let inner = type_to_meta(&*t);
+            quote! {
+                serde_meta::TypeInformation::SeqValue{ inner_type: &#inner }
+            }
+        }
         _ => panic!("type_to_meta: Not implemented for {:#?}", ty),
     }
 }
