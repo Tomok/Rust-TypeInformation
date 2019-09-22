@@ -43,6 +43,16 @@ fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::To
 
     //println!("Input {}: {:#?}", input.ident, input.data);
     let ident = input.ident;
+
+    let lifetimes: Vec<&syn::Lifetime> = input.generics.lifetimes().map(|x| &x.lifetime).collect();
+    let has_lifetimes = !lifetimes.is_empty();
+
+    let lifet = if has_lifetimes {
+        quote! {<#(#lifetimes),*>}
+    } else {
+        quote! {}
+    };
+
     let gen = match input.data {
         syn::Data::Struct(data_struct) => derive_struct(&ident, data_struct),
         syn::Data::Enum(data_enum) => derive_enum(&ident, data_enum),
@@ -55,7 +65,7 @@ fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::To
     let res = quote! {
         pub static #meta_info_name_ident: TypeInformation = #gen;
 
-        impl SerdeMeta for #ident {
+        impl #lifet SerdeMeta for #ident #lifet {
             fn meta() -> &'static serde_meta::TypeInformation {
                 &#meta_info_name_ident
             }
