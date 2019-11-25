@@ -55,7 +55,6 @@ fn build_static_variable_path(path: &syn::Path) -> syn::Path {
 /// logic, to make it unit testable, since proc_macro can not be used in the
 /// context of unit tests.
 fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
-    //TODO: Implement something usefull here
     let input: syn::DeriveInput = syn::parse2(item).unwrap();
 
     //println!("Input {}: {:#?}", input.ident, input.data);
@@ -263,6 +262,9 @@ fn path_to_meta(path: &syn::Path) -> proc_macro2::TokenStream {
     res
 }
 
+/// takes a given `syn::TypeArray` and returns the corresponding
+/// `TokenStream` generating a `serde_meta::TypeInformation::TupleValue`
+/// representing the array.
 fn array_to_meta(a: &syn::TypeArray) -> proc_macro2::TokenStream {
     if let syn::Expr::Lit(syn::ExprLit {
         lit: syn::Lit::Int(lit),
@@ -286,6 +288,8 @@ fn array_to_meta(a: &syn::TypeArray) -> proc_macro2::TokenStream {
     }
 }
 
+/// takes a `syn::Type` and returns a `TokenStream` generating the corresponding
+/// meta object
 fn type_to_meta(ty: &syn::Type) -> proc_macro2::TokenStream {
     match ty {
         syn::Type::Path(p) => path_to_meta(&p.path),
@@ -301,6 +305,7 @@ fn type_to_meta(ty: &syn::Type) -> proc_macro2::TokenStream {
     }
 }
 
+/// generates a `TokenStream` that creates the meta data for a given named field.
 fn derive_named_field(field: &syn::Field) -> proc_macro2::TokenStream {
     let x = field.ident.clone(); //TODO: is clone realy the only option here?
     let ident = format!("{}", x.unwrap());
@@ -319,6 +324,24 @@ mod test {
     use super::*;
 
     use quote::quote;
+
+    #[test]
+    fn test_build_static_variable_name_str() {
+        assert_eq!("_A_META_INFO", build_static_variable_name_str(&"A"));
+    }
+
+    #[test]
+    fn test_handle_simple_type_return_none() {
+        assert_eq!(handle_simple_type("NotASimpleType").is_none(), true);
+    }
+
+    #[test]
+    fn test_handle_simple_type_return_u8() {
+        let res = handle_simple_type("u8");
+        assert_eq!(res.is_some(), true);
+        let expectation = quote! { serde_meta::TypeInformation::U8Value() };
+        assert_eq!(res.unwrap().to_string(), expectation.to_string());
+    }
 
     #[test]
     fn test_derive_serde_unit_struct() {
