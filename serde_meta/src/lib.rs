@@ -37,9 +37,9 @@ pub enum EnumVariantType<'a> {
 
 #[derive(Debug, PartialEq, Eq)]
 /// Meta Data for an enum variant
-pub struct EnumVariant {
+pub struct EnumVariant<'a> {
     /// the name of the enums variant
-    pub name: &'static str,
+    pub name: &'a str,
     /// the possible kind and if used the fields inside the enum variant.
     pub inner_type: EnumVariantType<'a>,
 }
@@ -158,7 +158,6 @@ pub enum TypeInformation<'a> {
 pub trait SerdeMeta {
     /// Provide Meta Data for this struct.
     fn meta() -> &'static TypeInformation<'static>;
-}
 }
 
 #[cfg(test)]
