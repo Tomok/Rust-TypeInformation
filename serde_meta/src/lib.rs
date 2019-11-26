@@ -1,8 +1,8 @@
 #[derive(Debug, PartialEq, Eq)]
 /// Field inside a struct
-pub struct Field {
-    pub name: &'static str,
-    pub inner_type: &'static TypeInformation,
+pub struct Field<'a> {
+    pub name: &'a str,
+    pub inner_type: &'a TypeInformation<'a>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -24,15 +24,15 @@ pub struct Field {
 /// }
 /// ```
 /// A `StructVariant` is used.
-pub enum EnumVariantType {
+pub enum EnumVariantType<'a> {
     /// Enum variant without any fields.
     UnitVariant(),
     /// Enum variant for tuples.
     TupleVariant {
-        fields: &'static [&'static TypeInformation],
+        fields: &'a [&'a TypeInformation<'a>],
     },
     /// Enum variant for variants containing named fields.
-    StructVariant { fields: &'static [Field] },
+    StructVariant { fields: &'a [Field<'a>] },
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -41,13 +41,13 @@ pub struct EnumVariant {
     /// the name of the enums variant
     pub name: &'static str,
     /// the possible kind and if used the fields inside the enum variant.
-    pub inner_type: EnumVariantType,
+    pub inner_type: EnumVariantType<'a>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
 /// All possible kinds of TypeInformation delivered by `meta` function
 /// or contained in the structs returned by it.
-pub enum TypeInformation {
+pub enum TypeInformation<'a> {
     /// used for `bool` fields
     BoolValue(),
 
@@ -88,7 +88,7 @@ pub enum TypeInformation {
 
     // TODO should this remain, or is it just there because serde has it?
     OptionValue {
-        inner_type: &'static TypeInformation,
+        inner_type: &'a TypeInformation<'a>,
     },
 
     // TODO: Unused -> Remove??
@@ -103,7 +103,7 @@ pub enum TypeInformation {
     /// }
     /// ```
     UnitStructValue {
-        name: &'static str,
+        name: &'a str,
     },
 
     // TODO: Unused -> Remove??
@@ -117,18 +117,18 @@ pub enum TypeInformation {
     /// Used for all kinds of dynamically sized sequences,
     /// e.g. `[u8]`
     SeqValue {
-        inner_type: &'static TypeInformation,
+        inner_type: &'a TypeInformation<'a>,
     },
 
     /// TupleValue used for tuples, also used for
     /// arrays with known length, to be able to reflect
     /// the length information
     TupleValue {
-        inner_types: &'static [&'static TypeInformation],
+        inner_types: &'a [&'a TypeInformation<'a>],
     },
     TupleStructValue {
-        name: &'static str,
-        inner_types: &'static [&'static TypeInformation],
+        name: &'a str,
+        inner_types: &'a [&'a TypeInformation<'a>],
     },
 
     // TODO: Unused -> Remove??
@@ -137,8 +137,8 @@ pub enum TypeInformation {
     //     value_type: &'static TypeInformation,
     // },
     StructValue {
-        name: &'static str,
-        fields: &'static [Field],
+        name: &'a str,
+        fields: &'a [Field<'a>],
     },
 
     /// Used for an Enum and contains all possible variants
@@ -148,8 +148,8 @@ pub enum TypeInformation {
     /// not need to transfer the information, that a enum was
     /// used, just which value it had.
     EnumValue {
-        name: &'static str,
-        possible_variants: &'static [EnumVariant],
+        name: &'a str,
+        possible_variants: &'a [EnumVariant<'a>],
     },
 }
 
@@ -157,7 +157,8 @@ pub enum TypeInformation {
 /// `meta` function to your class providing meta data about it.
 pub trait SerdeMeta {
     /// Provide Meta Data for this struct.
-    fn meta() -> &'static TypeInformation;
+    fn meta() -> &'static TypeInformation<'static>;
+}
 }
 
 #[cfg(test)]

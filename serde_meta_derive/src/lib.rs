@@ -79,10 +79,10 @@ fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::To
     };
     let meta_info_name_ident = build_static_variable_name(&ident);
     let res = quote! {
-        pub static #meta_info_name_ident: TypeInformation = #gen;
+        pub static #meta_info_name_ident: TypeInformation<'static> = #gen;
 
         impl #lifet SerdeMeta for #ident #lifet {
-            fn meta() -> &'static serde_meta::TypeInformation {
+            fn meta() -> &'static serde_meta::TypeInformation<'static> {
                 &#meta_info_name_ident
             }
         }
@@ -348,12 +348,12 @@ mod test {
         let input = quote! { struct A; };
         let res = internal_derive_serde_meta(input);
         let expectation = quote! {
-            pub static _A_META_INFO: TypeInformation = serde_meta::TypeInformation::UnitStructValue {
+            pub static _A_META_INFO: TypeInformation<'static> = serde_meta::TypeInformation::UnitStructValue {
                     name: "A"
             };
 
             impl SerdeMeta for A {
-                fn meta() -> &'static serde_meta::TypeInformation {
+                fn meta() -> &'static serde_meta::TypeInformation<'static> {
                     & _A_META_INFO
                 }
             }
@@ -366,13 +366,13 @@ mod test {
         let input = quote! { struct A {} };
         let res = internal_derive_serde_meta(input);
         let expectation = quote! {
-            pub static _A_META_INFO: TypeInformation = serde_meta::TypeInformation::StructValue {
+            pub static _A_META_INFO: TypeInformation<'static> = serde_meta::TypeInformation::StructValue {
                 name: "A",
                 fields: &[]
             };
 
             impl SerdeMeta for A {
-                fn meta() -> &'static serde_meta::TypeInformation {
+                fn meta() -> &'static serde_meta::TypeInformation<'static> {
                     & _A_META_INFO
                 }
             }
