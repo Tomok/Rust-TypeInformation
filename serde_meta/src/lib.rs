@@ -1,3 +1,7 @@
+/// serde serializer support
+#[cfg(feature = "serde_ser")]
+mod serde_ser;
+
 #[derive(Debug, PartialEq, Eq)]
 /// Field inside a struct
 pub struct Field<'a> {

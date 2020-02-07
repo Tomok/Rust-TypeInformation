@@ -24,6 +24,14 @@ mod tests {
                 panic!("Expected StructValue, but got {:#?}", meta);
             }
         }
+
+        #[cfg(feature = "serde_ser")]
+        #[test]
+        fn test_serialization() {
+            let meta = A::meta();
+            let res = serde_json::to_string(&meta).unwrap();
+            assert_eq!("{\"StructValue\":{\"id\":0,\"name\":\"A\",\"fields\":[{\"name\":\"f\",\"inner_type\":\"U32Value\"}]}}", res);
+        }
     }
 
     mod test_derive_empty_struct {
@@ -42,6 +50,17 @@ mod tests {
             } else {
                 panic!("Expected StructValue, but got {:#?}", meta);
             }
+        }
+
+        #[cfg(feature = "serde_ser")]
+        #[test]
+        fn test_serialization() {
+            let meta = A::meta();
+            let res = serde_json::to_string(&meta).unwrap();
+            assert_eq!(
+                "{\"StructValue\":{\"id\":0,\"name\":\"A\",\"fields\":[]}}",
+                res
+            );
         }
     }
 
@@ -69,6 +88,14 @@ mod tests {
                 panic!("Expected StructValue, but got {:#?}", meta);
             }
         }
+
+        #[cfg(feature = "serde_ser")]
+        #[test]
+        fn test_serialization() {
+            let meta = A::meta();
+            let res = serde_json::to_string(&meta).unwrap();
+            assert_eq!("{\"StructValue\":{\"id\":0,\"name\":\"A\",\"fields\":[{\"name\":\"f\",\"inner_type\":{\"UnitStructValue\":{\"name\":\"B\"}}}]}}", res);
+        }
     }
 
     mod test_derive_multiple_unnamed_fields_struct {
@@ -90,6 +117,14 @@ mod tests {
             } else {
                 panic!("Expected TupleStructValue, but got {:#?}", meta);
             }
+        }
+
+        #[cfg(feature = "serde_ser")]
+        #[test]
+        fn test_serialization() {
+            let meta = A::meta();
+            let res = serde_json::to_string(&meta).unwrap();
+            assert_eq!("{\"TupleStructValue\":{\"id\":0,\"name\":\"A\",\"inner_types\":[\"U8Value\",\"U16Value\",\"U32Value\"]}}", res);
         }
     }
 
@@ -121,6 +156,14 @@ mod tests {
                 panic!("Expected StructValue, but got {:#?}", meta);
             }
         }
+
+        #[cfg(feature = "serde_ser")]
+        #[test]
+        fn test_serialization() {
+            let meta = A::meta();
+            let res = serde_json::to_string(&meta).unwrap();
+            assert_eq!("{\"StructValue\":{\"id\":0,\"name\":\"A\",\"fields\":[{\"name\":\"f\",\"inner_type\":{\"SeqValue\":{\"inner_types\":[\"U8Value\",\"U8Value\",\"U8Value\"]}}}]}}", res);
+        }
     }
 
     mod test_derive_array_ref {
@@ -149,6 +192,14 @@ mod tests {
             } else {
                 panic!("Expected StructValue, but got {:#?}", meta);
             }
+        }
+
+        #[cfg(feature = "serde_ser")]
+        #[test]
+        fn test_serialization() {
+            let meta = A::meta();
+            let res = serde_json::to_string(&meta).unwrap();
+            assert_eq!("{\"StructValue\":{\"id\":0,\"name\":\"A\",\"fields\":[{\"name\":\"f\",\"inner_type\":{\"SeqValue\":{\"inner_type\":\"U16Value\"}}}]}}", res);
         }
     }
 
@@ -208,6 +259,14 @@ mod tests {
             } else {
                 panic!("Expected EnumValue but got {:#?}", meta);
             }
+        }
+
+        #[cfg(feature = "serde_ser")]
+        #[test]
+        fn test_serialization() {
+            let meta = A::meta();
+            let res = serde_json::to_string(&meta).unwrap();
+            assert_eq!("{\"EnumValue\":{\"id\":0,\"name\":\"A\",\"possible_variants\":[{\"name\":\"IntVal\",\"inner_type\":{\"TupleVariant\":{\"fields\":[\"I32Value\"]}}},{\"name\":\"StructVal\",\"inner_type\":{\"TupleVariant\":{\"fields\":[{\"name\":\"field\",\"inner_type\":\"BoolValue\"}]}}},{\"name\":\"UnitVal\",\"inner_type\":\"UnitVariant\"}]}}", res);
         }
     }
 }
