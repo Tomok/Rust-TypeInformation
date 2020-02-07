@@ -168,8 +168,8 @@ mod serde_ser {
     struct VisitedMap(RefCell<HashMap<u64, Id>>);
 
     impl VisitedMap {
-        fn get(&self, mem_pos: &u64) -> Option<Id> {
-            self.0.borrow().get(mem_pos).map(|x| *x)
+        fn get(&self, mem_pos: u64) -> Option<Id> {
+            self.0.borrow().get(&mem_pos).copied()
         }
 
         fn register(&self, mem_pos: u64) -> Id {
@@ -200,7 +200,7 @@ mod serde_ser {
             let mut hasher = DefaultHasher::new();
             core::ptr::hash(self.type_info, &mut hasher);
             let self_mem_pos = hasher.finish();
-            if let Some(id) = self.visited.get(&self_mem_pos) {
+            if let Some(id) = self.visited.get(self_mem_pos) {
                 let mut st = serializer.serialize_struct("TypeInformationRef", 1)?;
                 st.serialize_field("id", &id)?;
                 st.end()
