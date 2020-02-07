@@ -1,8 +1,6 @@
 extern crate proc_macro;
 extern crate proc_macro2;
 use proc_macro::TokenStream;
-use std::convert::TryInto;
-
 use quote::quote;
 use syn;
 
@@ -45,7 +43,7 @@ fn build_static_variable_path(path: &syn::Path) -> syn::Path {
     let mut v = item.into_value();
     v.ident = new_value;
     res.segments.push(v);
-    assert!(res.segments.last().unwrap().value().ident == build_static_variable_name(&last_value));
+    assert!(res.segments.last().unwrap().ident == build_static_variable_name(&last_value));
     res
 }
 
@@ -252,7 +250,7 @@ fn path_to_meta(path: &syn::Path) -> proc_macro2::TokenStream {
     if path.segments.len() == 1 {
         //could be a basic type
         let simple_type_res =
-            handle_simple_type(&path.segments.first().unwrap().value().ident.to_string());
+            handle_simple_type(&path.segments.first().unwrap().ident.to_string());
         if let Some(res) = simple_type_res {
             return res;
         }
@@ -271,11 +269,8 @@ fn array_to_meta(a: &syn::TypeArray) -> proc_macro2::TokenStream {
         ..
     }) = &a.len
     {
-        let l = lit.value();
+        let size = lit.base10_parse().expect("Could not parse array size");
         let t = type_to_meta(&*a.elem);
-        let size: usize = l
-            .try_into()
-            .unwrap_or_else(|s| panic!("Array size to big: {:#?}", s));
         let fields_iter = std::iter::repeat(t).take(size);
         quote! {
             serde_meta::TypeInformation::TupleValue { inner_types: &[#(&#fields_iter),*] }
