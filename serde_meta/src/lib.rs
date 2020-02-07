@@ -154,7 +154,7 @@ pub enum TypeInformation<'a> {
 }
 
 /// serde serializer support
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde_ser")]
 mod serde_ser {
     use super::*;
     use serde::ser::*;
