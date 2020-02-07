@@ -161,7 +161,7 @@ mod serde_support {
     use std::collections::HashMap;
     use std::hash::Hasher;
 
-    type Id = u64;
+    type Id = usize;
 
     struct VisitedMap(RefCell<HashMap<u64, Id>>);
 
@@ -172,7 +172,7 @@ mod serde_support {
 
         fn register(&self, mem_pos: u64) -> Id {
             let mut v = self.0.borrow_mut();
-            let res = v.len() as Id;
+            let res = v.len();
             let existing = v.insert(mem_pos, res);
             assert!(existing.is_none()); //only new items should be registered
             res
