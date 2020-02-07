@@ -163,15 +163,29 @@ mod serde_support {
 
     type Id = u64;
 
-    type VisitedMap<'a> = RefCell<HashMap<u64, Id>>;
+    struct VisitedMap(RefCell<HashMap<u64, Id>>);
+
+    impl VisitedMap {
+        fn get(&self, mem_pos: &u64) -> Option<Id> {
+            self.0.borrow().get(mem_pos).map(|x| *x)
+        }
+
+        fn register(&self, mem_pos: u64) -> Id {
+            let mut v = self.0.borrow_mut();
+            let res = v.len() as Id;
+            let existing = v.insert(mem_pos, res);
+            assert!(existing.is_none()); //only new items should be registered
+            res
+        }
+    }
 
     struct SerializeableTypeInformation<'a, 'b> {
         type_info: &'a TypeInformation<'a>,
-        visited: &'b VisitedMap<'b>,
+        visited: &'b VisitedMap,
     }
 
     impl<'a, 'b> SerializeableTypeInformation<'a, 'b> {
-        fn new(type_info: &'a TypeInformation<'a>, visited: &'b VisitedMap<'b>) -> Self {
+        fn new(type_info: &'a TypeInformation<'a>, visited: &'b VisitedMap) -> Self {
             Self { type_info, visited }
         }
     }
@@ -184,7 +198,7 @@ mod serde_support {
             let mut hasher = DefaultHasher::new();
             core::ptr::hash(self.type_info, &mut hasher);
             let self_mem_pos = hasher.finish();
-            if let Some(id) = { self.visited.borrow().get(&self_mem_pos) } {
+            if let Some(id) = self.visited.get(&self_mem_pos) {
                 let mut st = serializer.serialize_struct("TypeInformationRef", 1)?;
                 st.serialize_field("id", &id)?;
                 st.end()
@@ -290,8 +304,10 @@ mod serde_support {
                             "TypeInformation",
                             19,
                             "TupleStructValue",
-                            2,
+                            3,
                         )?;
+                        let id = visited.register(self_mem_pos);
+                        st.serialize_field("id", &id)?;
                         st.serialize_field("name", name)?;
                         let serializeable_inner_types =
                             SerializeableTypeInformations::new(inner_types, visited);
@@ -303,8 +319,10 @@ mod serde_support {
                             "TypeInformation",
                             19,
                             "StructValue",
-                            2,
+                            3,
                         )?;
+                        let id = visited.register(self_mem_pos);
+                        st.serialize_field("id", &id)?;
                         st.serialize_field("name", name)?;
                         let serializeable_fields = SerializeableFields::new(fields, visited);
                         st.serialize_field("fields", &serializeable_fields)?;
@@ -318,8 +336,10 @@ mod serde_support {
                             "TypeInformation",
                             20,
                             "EnumValue",
-                            2,
+                            3,
                         )?;
+                        let id = visited.register(self_mem_pos);
+                        st.serialize_field("id", &id)?;
                         st.serialize_field("name", name)?;
                         let serializeable =
                             SerializeableEnumVariants::new(possible_variants, visited);
@@ -333,11 +353,11 @@ mod serde_support {
 
     struct SerializeableTypeInformations<'a, 'b> {
         type_info: &'a [&'a TypeInformation<'a>],
-        visited: &'b VisitedMap<'b>,
+        visited: &'b VisitedMap,
     }
 
     impl<'a, 'b> SerializeableTypeInformations<'a, 'b> {
-        fn new(type_info: &'a [&'a TypeInformation<'a>], visited: &'b VisitedMap<'b>) -> Self {
+        fn new(type_info: &'a [&'a TypeInformation<'a>], visited: &'b VisitedMap) -> Self {
             Self { type_info, visited }
         }
     }
@@ -358,11 +378,11 @@ mod serde_support {
 
     struct SerializeableField<'a, 'b> {
         field: &'a Field<'a>,
-        visited: &'b VisitedMap<'b>,
+        visited: &'b VisitedMap,
     }
 
     impl<'a, 'b> SerializeableField<'a, 'b> {
-        fn new(field: &'a Field<'a>, visited: &'b VisitedMap<'b>) -> Self {
+        fn new(field: &'a Field<'a>, visited: &'b VisitedMap) -> Self {
             Self { field, visited }
         }
     }
@@ -382,11 +402,11 @@ mod serde_support {
     }
     struct SerializeableFields<'a, 'b> {
         fields: &'a [Field<'a>],
-        visited: &'b VisitedMap<'b>,
+        visited: &'b VisitedMap,
     }
 
     impl<'a, 'b> SerializeableFields<'a, 'b> {
-        fn new(fields: &'a [Field<'a>], visited: &'b VisitedMap<'b>) -> Self {
+        fn new(fields: &'a [Field<'a>], visited: &'b VisitedMap) -> Self {
             Self { fields, visited }
         }
     }
@@ -407,11 +427,11 @@ mod serde_support {
 
     struct SerializeableEnumVariantType<'a, 'b> {
         enum_variant_type: &'a EnumVariantType<'a>,
-        visited: &'b VisitedMap<'b>,
+        visited: &'b VisitedMap,
     }
 
     impl<'a, 'b> SerializeableEnumVariantType<'a, 'b> {
-        fn new(enum_variant_type: &'a EnumVariantType<'a>, visited: &'b VisitedMap<'b>) -> Self {
+        fn new(enum_variant_type: &'a EnumVariantType<'a>, visited: &'b VisitedMap) -> Self {
             Self {
                 enum_variant_type,
                 visited,
@@ -456,11 +476,11 @@ mod serde_support {
 
     struct SerializeableEnumVariant<'a, 'b> {
         enum_variant: &'a EnumVariant<'a>,
-        visited: &'b VisitedMap<'b>,
+        visited: &'b VisitedMap,
     }
 
     impl<'a, 'b> SerializeableEnumVariant<'a, 'b> {
-        fn new(enum_variant: &'a EnumVariant<'a>, visited: &'b VisitedMap<'b>) -> Self {
+        fn new(enum_variant: &'a EnumVariant<'a>, visited: &'b VisitedMap) -> Self {
             Self {
                 enum_variant,
                 visited,
@@ -483,11 +503,11 @@ mod serde_support {
     }
     struct SerializeableEnumVariants<'a, 'b> {
         enum_variants: &'a [EnumVariant<'a>],
-        visited: &'b VisitedMap<'b>,
+        visited: &'b VisitedMap,
     }
 
     impl<'a, 'b> SerializeableEnumVariants<'a, 'b> {
-        fn new(enum_variants: &'a [EnumVariant<'a>], visited: &'b VisitedMap<'b>) -> Self {
+        fn new(enum_variants: &'a [EnumVariant<'a>], visited: &'b VisitedMap) -> Self {
             Self {
                 enum_variants,
                 visited,
@@ -514,7 +534,7 @@ mod serde_support {
         where
             S: Serializer,
         {
-            let visited = RefCell::new(HashMap::new());
+            let visited = VisitedMap(RefCell::new(HashMap::new()));
             let serializeable = SerializeableTypeInformation::new(&self, &visited);
             serializeable.serialize(serializer)
         }
@@ -522,6 +542,7 @@ mod serde_support {
     #[cfg(test)]
     mod tests {
         use super::*;
+
         #[test]
         fn simple_struct_serialize_test() {
             let to = TypeInformation::StructValue {
@@ -530,9 +551,24 @@ mod serde_support {
             };
             let res = serde_json::to_string(&to).unwrap();
             assert_eq!(
-                "{\"StructValue\":{\"name\":\"TestObject\",\"fields\":[]}}",
+                "{\"StructValue\":{\"id\":0,\"name\":\"TestObject\",\"fields\":[]}}",
                 res
             );
+        }
+
+        static FIELDS: &[Field] = &[Field {
+            name: "a",
+            inner_type: &LOOPED_TEST_STRUCT,
+        }];
+        static LOOPED_TEST_STRUCT: TypeInformation = TypeInformation::StructValue {
+            name: &"A",
+            fields: FIELDS,
+        };
+
+        #[test]
+        fn looped_struct_serialize_test() {
+            let res = serde_json::to_string(&LOOPED_TEST_STRUCT).unwrap();
+            assert_eq!("{\"StructValue\":{\"id\":0,\"name\":\"A\",\"fields\":[{\"name\":\"a\",\"inner_type\":{\"id\":0}}]}}", res);
         }
     }
 }
@@ -576,6 +612,5 @@ mod tests {
                 panic!("TEST_STRUCT did not contain a TEST_STRUCT as field");
             }
         }
-
     }
 }
