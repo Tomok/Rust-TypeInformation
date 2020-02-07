@@ -6,3 +6,7 @@ edition = "2018"
 
 [dependencies]
 proc-macro2 = { version = "0.4.30" }
+serde = { version = "1.0"}
+
+[dev-dependencies]
+serde_json = "1.0"
