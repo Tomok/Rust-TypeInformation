@@ -163,7 +163,7 @@ mod serde_support {
 
     type Id = u64;
 
-    type VisitedMap<'a> = RefCell<HashMap<u64, (Id, &'a TypeInformation<'a>)>>;
+    type VisitedMap<'a> = RefCell<HashMap<u64, Id>>;
 
     struct SerializeableTypeInformation<'a, 'b> {
         type_info: &'a TypeInformation<'a>,
@@ -184,7 +184,7 @@ mod serde_support {
             let mut hasher = DefaultHasher::new();
             core::ptr::hash(self.type_info, &mut hasher);
             let self_mem_pos = hasher.finish();
-            if let Some(&(id, _ty)) = { self.visited.borrow().get(&self_mem_pos) } {
+            if let Some(id) = { self.visited.borrow().get(&self_mem_pos) } {
                 let mut st = serializer.serialize_struct("TypeInformationRef", 1)?;
                 st.serialize_field("id", &id)?;
                 st.end()
