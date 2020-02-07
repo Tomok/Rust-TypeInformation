@@ -153,7 +153,9 @@ pub enum TypeInformation<'a> {
     },
 }
 
-mod serde_support {
+/// serde serializer support
+#[cfg(feature = "serde")]
+mod serde_ser {
     use super::*;
     use serde::ser::*;
     use std::cell::RefCell;
