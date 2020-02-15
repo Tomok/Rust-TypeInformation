@@ -5,8 +5,22 @@ mod serde_ser;
 #[derive(Debug, PartialEq, Eq)]
 /// Field inside a struct
 pub struct Field<'a> {
-    pub name: &'a str,
-    pub inner_type: &'a TypeInformation<'a>,
+    name: &'a str,
+    inner_type: &'a TypeInformation<'a>,
+}
+
+impl<'a> Field<'a> {
+    pub const fn new(name: &'a str, inner_type: &'a TypeInformation<'a>) -> Self{
+        Self { name, inner_type }
+    }
+
+    pub fn name(&'a self) -> &'a str {
+        self.name
+    }
+
+    pub fn inner_type(&'a self) -> &'a TypeInformation<'a> {
+        self.inner_type
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]

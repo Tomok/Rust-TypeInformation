@@ -306,10 +306,10 @@ fn derive_named_field(field: &syn::Field) -> proc_macro2::TokenStream {
     let ident = format!("{}", x.unwrap());
     let type_info = type_to_meta(&field.ty);
     let map_res = quote! {
-        Field {
-            name: #ident,
-            inner_type: &#type_info,
-        }
+        Field::new(
+            #ident,
+            &#type_info,
+        )
     };
     map_res
 }
