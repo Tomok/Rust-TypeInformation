@@ -144,10 +144,7 @@ fn derive_enum_variant(variant: &syn::Variant) -> proc_macro2::TokenStream {
     };
 
     quote! {
-        serde_meta::EnumVariant {
-            name: #strident,
-            inner_type: #inner_type,
-        }
+        serde_meta::EnumVariant::new(#strident, #inner_type)
     }
 }
 

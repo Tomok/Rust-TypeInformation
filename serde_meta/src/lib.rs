@@ -56,10 +56,27 @@ pub enum EnumVariantType<'a> {
 #[derive(Debug, PartialEq, Eq)]
 /// Meta Data for an enum variant
 pub struct EnumVariant<'a> {
+    name: &'a str,
+    inner_type: EnumVariantType<'a>,
+}
+
+impl<'a> EnumVariant<'a> {
+    pub const fn new(name: &'a str, inner_type: EnumVariantType<'a>) -> Self {
+        Self {
+            name,
+            inner_type
+        }
+    }
+
     /// the name of the enums variant
-    pub name: &'a str,
+    pub fn name(&'a self) -> &'a str {
+        self.name
+    }
+
     /// the possible kind and if used the fields inside the enum variant.
-    pub inner_type: EnumVariantType<'a>,
+    pub fn inner_type(&'a self) -> &EnumVariantType<'a> {
+        &self.inner_type
+    } 
 }
 
 #[derive(Debug, PartialEq, Eq)]

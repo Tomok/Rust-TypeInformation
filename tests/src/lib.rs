@@ -225,21 +225,21 @@ mod tests {
                 assert_eq!(&"A", name);
                 assert_eq!(3, possible_variants.len());
 
-                assert_eq!("IntVal", possible_variants[0].name);
-                if let EnumVariantType::TupleVariant { fields: x } = possible_variants[0].inner_type
+                assert_eq!("IntVal", possible_variants[0].name());
+                if let EnumVariantType::TupleVariant { fields: x } = possible_variants[0].inner_type()
                 {
                     assert_eq!(1, x.len());
                     assert_eq!(&TypeInformation::I32Value(), x[0]);
                 } else {
                     panic!(
                         "Expected TupleVariant, but found {:#?}",
-                        possible_variants[0].inner_type
+                        possible_variants[0].inner_type()
                     );
                 }
 
-                assert_eq!("StructVal", possible_variants[1].name);
+                assert_eq!("StructVal", possible_variants[1].name());
                 if let EnumVariantType::StructVariant { fields: x } =
-                    possible_variants[1].inner_type
+                    possible_variants[1].inner_type()
                 {
                     assert_eq!(1, x.len());
                     assert_eq!(&TypeInformation::BoolValue(), x[0].inner_type());
@@ -247,14 +247,14 @@ mod tests {
                 } else {
                     panic!(
                         "Expected StructVariant, but found {:#?}",
-                        possible_variants[0].inner_type
+                        possible_variants[0].inner_type()
                     );
                 }
 
-                assert_eq!("UnitVal", possible_variants[2].name);
+                assert_eq!("UnitVal", possible_variants[2].name());
                 assert_eq!(
-                    EnumVariantType::UnitVariant(),
-                    possible_variants[2].inner_type
+                    &EnumVariantType::UnitVariant(),
+                    possible_variants[2].inner_type()
                 )
             } else {
                 panic!("Expected EnumValue but got {:#?}", meta);
