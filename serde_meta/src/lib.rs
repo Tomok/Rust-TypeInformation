@@ -23,6 +23,28 @@ impl<'a> Field<'a> {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct Fields<'a> {
+    fields: &'a [Field<'a>],
+}
+
+impl<'a> Fields<'a> {
+    pub const fn new(fields: &'a [Field<'a>]) -> Self {
+        //TODO: maybe check for duplicate names?
+        Self { fields }
+    }
+
+    pub fn fields(&'a self) -> &'a [Field<'a>] {
+        self.fields
+    }
+}
+
+impl<'a> From<&'a [Field<'a>]> for Fields<'a> {
+    fn from(a: &'a [Field<'a>]) -> Self { 
+        Self::new(a)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 /// Possible types contained in a enum.
 ///
@@ -50,7 +72,7 @@ pub enum EnumVariantType<'a> {
         fields: &'a [&'a TypeInformation<'a>],
     },
     /// Enum variant for variants containing named fields.
-    StructVariant { fields: &'a [Field<'a>] },
+    StructVariant(Fields<'a>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -211,10 +233,7 @@ pub enum TypeInformation<'a> {
     //     key_type: &'static TypeInformation,
     //     value_type: &'static TypeInformation,
     // },
-    StructValue {
-        name: &'a str,
-        fields: &'a [Field<'a>],
-    },
+    StructValue(NamedTypeInformation<'a, Fields<'a>>),
 
     /// Used for an Enum and contains all possible variants
     /// of it.
@@ -245,24 +264,21 @@ mod tests {
 
         use std::ptr;
 
-        static FIELDS: &[Field] = &[Field {
+        static FIELDS: Fields = Fields::new(&[Field {
             name: "a",
             inner_type: &TEST_STRUCT,
-        }];
-        static TEST_STRUCT: TypeInformation = StructValue {
-            name: &"A",
-            fields: FIELDS,
-        };
+        }]);
+        static TEST_STRUCT: TypeInformation = StructValue(NamedTypeInformation::new(&"A", FIELDS));
 
         #[test]
         fn test_structs_can_reference_themselves() {
-            if let StructValue {
+            if let StructValue (NamedTypeInformation {
                 name: _,
-                fields: [field_struct],
-            } = TEST_STRUCT
+                type_info:  fields,
+            }) = TEST_STRUCT
             {
                 //make sure it is the same instance
-                assert!(ptr::eq(&TEST_STRUCT, field_struct.inner_type));
+                assert!(ptr::eq(&TEST_STRUCT, fields.fields()[0].inner_type()));
             } else {
                 panic!("TEST_STRUCT did not contain a TEST_STRUCT as field");
             }

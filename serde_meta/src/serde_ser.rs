@@ -162,17 +162,18 @@ impl<'a, 'b, 'c> Serialize for SerializeableTypeInformation<'b, 'c> {
                     st.serialize_field("inner_types", &serializeable_inner_types)?;
                     st.end()
                 }
-                TypeInformation::StructValue { name, fields } => {
+                TypeInformation::StructValue(named_type_info) => {
                     let mut st = serializer.serialize_struct_variant(
                         "TypeInformation",
                         19,
                         "StructValue",
                         3,
                     )?;
+                    let fields = named_type_info.type_info();
                     let id = visited.register(self_mem_pos);
                     st.serialize_field("id", &id)?;
-                    st.serialize_field("name", name)?;
-                    let serializeable_fields = SerializeableFields::new(fields, visited);
+                    st.serialize_field("name", named_type_info.name())?;
+                    let serializeable_fields = SerializeableFields::new(fields.fields(), visited);
                     st.serialize_field("fields", &serializeable_fields)?;
                     st.end()
                 }
@@ -301,10 +302,10 @@ impl<'a, 'b, 'c> Serialize for SerializeableEnumVariantType<'b, 'c> {
                 st.serialize_field("fields", &serializeable)?;
                 st.end()
             }
-            EnumVariantType::StructVariant { fields } => {
+            EnumVariantType::StructVariant(fields)  => {
                 let mut st =
                     serializer.serialize_struct_variant("EnumVariantType", 2, "TupleVariant", 1)?;
-                let serializeable = SerializeableFields::new(fields, self.visited);
+                let serializeable = SerializeableFields::new(fields.fields(), self.visited);
                 st.serialize_field("fields", &serializeable)?;
                 st.end()
             }
@@ -383,10 +384,7 @@ mod tests {
 
     #[test]
     fn simple_struct_serialize_test() {
-        let to = TypeInformation::StructValue {
-            name: "TestObject",
-            fields: &[],
-        };
+        let to = TypeInformation::StructValue(NamedTypeInformation::new("TestObject", Fields::new(&[])));
         let res = serde_json::to_string(&to).unwrap();
         assert_eq!(
             "{\"StructValue\":{\"id\":0,\"name\":\"TestObject\",\"fields\":[]}}",
@@ -394,14 +392,11 @@ mod tests {
         );
     }
 
-    static FIELDS: &[Field] = &[Field {
+    static FIELDS: Fields = Fields::new(&[Field {
         name: "a",
         inner_type: &LOOPED_TEST_STRUCT,
-    }];
-    static LOOPED_TEST_STRUCT: TypeInformation = TypeInformation::StructValue {
-        name: &"A",
-        fields: FIELDS,
-    };
+    }]);
+    static LOOPED_TEST_STRUCT: TypeInformation = TypeInformation::StructValue(NamedTypeInformation::new(&"A", FIELDS));
 
     #[test]
     fn looped_struct_serialize_test() {

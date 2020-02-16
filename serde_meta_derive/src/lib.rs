@@ -123,9 +123,7 @@ fn derive_enum_variant(variant: &syn::Variant) -> proc_macro2::TokenStream {
         syn::Fields::Named(f) => {
             let fields = derive_fields_named(f);
             quote! {
-                serde_meta::EnumVariantType::StructVariant {
-                    fields: #fields
-                }
+                serde_meta::EnumVariantType::StructVariant(#fields)
             }
         }
         syn::Fields::Unnamed(f) => {
@@ -160,10 +158,7 @@ fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> proc_macro
         syn::Fields::Named(f) => {
             let fields = derive_fields_named(f);
             let res = quote! {
-                serde_meta::TypeInformation::StructValue {
-                    name: #strident,
-                    fields: #fields
-                }
+                serde_meta::TypeInformation::StructValue(NamedTypeInformation::new( #strident, #fields))
             };
             res
         }
@@ -188,12 +183,12 @@ fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> proc_macro
 
 /// Converts the tokens describing named fields of a struct
 /// (or struct variant of an enum), into a token stream generating
-/// the corresponding meta data, i.e. a reference to an array of `Field`
+/// the corresponding meta data, i.e. a Fields object
 fn derive_fields_named(fields: &syn::FieldsNamed) -> proc_macro2::TokenStream {
     let fields_iter = fields.named.iter().map(|f| derive_named_field(f));
 
     quote! {
-        &[#(#fields_iter),*]
+        serde_meta::Fields::new(&[#(#fields_iter),*])
     }
 }
 
@@ -355,10 +350,10 @@ mod test {
         let input = quote! { struct A {} };
         let res = internal_derive_serde_meta(input);
         let expectation = quote! {
-            pub static _A_META_INFO: TypeInformation<'static> = serde_meta::TypeInformation::StructValue {
-                name: "A",
-                fields: &[]
-            };
+            pub static _A_META_INFO: TypeInformation<'static> = serde_meta::TypeInformation::StructValue(
+                NamedTypeInformation::new("A", 
+                serde_meta::Fields::new(&[]))
+            );
 
             impl SerdeMeta for A {
                 fn meta() -> &'static serde_meta::TypeInformation<'static> {
