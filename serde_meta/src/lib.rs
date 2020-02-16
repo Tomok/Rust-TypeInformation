@@ -77,19 +77,26 @@ impl<'a> EnumVariant<'a> {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct UnitStructType<'a> {
+pub struct NamedTypeInformation<'a, I: Sized> {
     name: &'a str,
+    type_info: I,
 }
 
-impl<'a> UnitStructType<'a> {
-    pub const fn new(name: &'a str) -> Self {
-        Self { name }
+impl<'a, I: Sized> NamedTypeInformation<'a, I> {
+    pub const fn new(name: &'a str, type_info: I) -> Self {
+        Self { name, type_info }
     }
 
     pub fn name(&self) -> &str {
         self.name
     }
+
+    pub fn type_info(&self) -> &I {
+        &self.type_info
+    }
 }
+
+pub type UnitStructType<'a> = NamedTypeInformation<'a, ()>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SeqType<'a> {
