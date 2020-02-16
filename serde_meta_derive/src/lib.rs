@@ -290,7 +290,7 @@ fn type_to_meta(ty: &syn::Type) -> proc_macro2::TokenStream {
         syn::Type::Slice(syn::TypeSlice { elem: t, .. }) => {
             let inner = type_to_meta(&*t);
             quote! {
-                serde_meta::TypeInformation::SeqValue{ inner_type: &#inner }
+                serde_meta::TypeInformation::SeqValue(serde_meta::SeqType::new( &#inner ))
             }
         }
         _ => panic!("type_to_meta: Not implemented for {:#?}", ty),

@@ -94,6 +94,20 @@ impl<'a> UnitStructType<'a> {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct SeqType<'a> {
+    inner_type: &'a TypeInformation<'a>,
+}
+
+impl<'a> SeqType<'a> {
+    pub const fn new(inner_type: &'a TypeInformation<'a>) -> Self { Self { inner_type } }
+
+    pub fn inner_type(&'a self) -> &'a TypeInformation<'a>{
+        self.inner_type
+    }
+}
+
+
 
 #[derive(Debug, PartialEq, Eq)]
 /// All possible kinds of TypeInformation delivered by `meta` function
@@ -165,9 +179,7 @@ pub enum TypeInformation<'a> {
     // },
     /// Used for all kinds of dynamically sized sequences,
     /// e.g. `[u8]`
-    SeqValue {
-        inner_type: &'a TypeInformation<'a>,
-    },
+    SeqValue(SeqType<'a>),
 
     /// TupleValue used for tuples, also used for
     /// arrays with known length, to be able to reflect

@@ -120,7 +120,8 @@ impl<'a, 'b, 'c> Serialize for SerializeableTypeInformation<'b, 'c> {
                     st.serialize_field("name", name)?;
                     st.end()
                 }
-                TypeInformation::SeqValue { inner_type } => {
+                TypeInformation::SeqValue(seq_type) => {
+                    let inner_type = seq_type.inner_type();
                     let mut st = serializer.serialize_struct_variant(
                         "TypeInformation",
                         18,
