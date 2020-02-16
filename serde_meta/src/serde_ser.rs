@@ -133,7 +133,7 @@ impl<'a, 'b, 'c> Serialize for SerializeableTypeInformation<'b, 'c> {
                     st.serialize_field("inner_type", &serializeable_inner_type)?;
                     st.end()
                 }
-                TypeInformation::TupleValue { inner_types } => {
+                TypeInformation::TupleValue(tuple_types) => {
                     let mut st = serializer.serialize_struct_variant(
                         "TypeInformation",
                         18,
@@ -141,7 +141,7 @@ impl<'a, 'b, 'c> Serialize for SerializeableTypeInformation<'b, 'c> {
                         1,
                     )?;
                     let serializeable_inner_types =
-                        SerializeableTypeInformations::new(inner_types, visited);
+                        SerializeableTypeInformations::new(tuple_types.inner_types(), visited);
                     st.serialize_field("inner_types", &serializeable_inner_types)?;
                     st.end()
                 }

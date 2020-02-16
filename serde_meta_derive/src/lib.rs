@@ -270,7 +270,7 @@ fn array_to_meta(a: &syn::TypeArray) -> proc_macro2::TokenStream {
         let t = type_to_meta(&*a.elem);
         let fields_iter = std::iter::repeat(t).take(size);
         quote! {
-            serde_meta::TypeInformation::TupleValue { inner_types: &[#(&#fields_iter),*] }
+            serde_meta::TypeInformation::TupleValue(serde_meta::TupleTypes::new( &[#(&#fields_iter),*] ))
         }
     } else {
         panic!(

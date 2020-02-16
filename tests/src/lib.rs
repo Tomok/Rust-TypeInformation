@@ -144,7 +144,8 @@ mod tests {
                 assert_eq!(&"A", name);
                 assert_eq!(1, fields.len());
                 assert_eq!("f", fields[0].name());
-                if let TypeInformation::TupleValue { inner_types } = fields[0].inner_type() {
+                if let TypeInformation::TupleValue (tuple_types) = fields[0].inner_type() {
+                    let inner_types = tuple_types.inner_types();
                     assert_eq!(3, inner_types.len());
                     for &t in inner_types.iter() {
                         assert_eq!(&TypeInformation::U8Value(), t);

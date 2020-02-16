@@ -107,7 +107,16 @@ impl<'a> SeqType<'a> {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct TupleTypes<'a> {
+    inner_types: &'a [&'a TypeInformation<'a>],
+}
 
+impl<'a> TupleTypes<'a> {
+    pub const fn new(inner_types: &'a [&'a TypeInformation<'a>]) -> Self { Self { inner_types } }
+
+    pub fn inner_types(&'a self) -> &'a [&'a TypeInformation<'a>] { self.inner_types }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 /// All possible kinds of TypeInformation delivered by `meta` function
@@ -184,9 +193,7 @@ pub enum TypeInformation<'a> {
     /// TupleValue used for tuples, also used for
     /// arrays with known length, to be able to reflect
     /// the length information
-    TupleValue {
-        inner_types: &'a [&'a TypeInformation<'a>],
-    },
+    TupleValue(TupleTypes<'a>),
     TupleStructValue {
         name: &'a str,
         inner_types: &'a [&'a TypeInformation<'a>],
