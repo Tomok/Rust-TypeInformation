@@ -170,10 +170,10 @@ fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> proc_macro
         syn::Fields::Unnamed(f) => {
             let fields = derive_fields_unnamed(f);
             let res = quote! {
-                serde_meta::TypeInformation::TupleStructValue {
-                    name: #strident,
-                    inner_types: #fields
-                }
+                serde_meta::TypeInformation::TupleStructValue(
+                    serde_meta::NamedTypeInformation::new(#strident,
+                        serde_meta::TupleTypes::new(#fields))
+                )
             };
             res
         }

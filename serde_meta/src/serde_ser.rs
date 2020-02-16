@@ -145,7 +145,7 @@ impl<'a, 'b, 'c> Serialize for SerializeableTypeInformation<'b, 'c> {
                     st.serialize_field("inner_types", &serializeable_inner_types)?;
                     st.end()
                 }
-                TypeInformation::TupleStructValue { name, inner_types } => {
+                TypeInformation::TupleStructValue(named_type_info) => {
                     let mut st = serializer.serialize_struct_variant(
                         "TypeInformation",
                         19,
@@ -154,9 +154,11 @@ impl<'a, 'b, 'c> Serialize for SerializeableTypeInformation<'b, 'c> {
                     )?;
                     let id = visited.register(self_mem_pos);
                     st.serialize_field("id", &id)?;
-                    st.serialize_field("name", name)?;
-                    let serializeable_inner_types =
-                        SerializeableTypeInformations::new(inner_types, visited);
+                    st.serialize_field("name", named_type_info.name())?;
+                    let serializeable_inner_types = SerializeableTypeInformations::new(
+                        named_type_info.type_info().inner_types(),
+                        visited,
+                    );
                     st.serialize_field("inner_types", &serializeable_inner_types)?;
                     st.end()
                 }

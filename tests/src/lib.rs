@@ -108,8 +108,9 @@ mod tests {
         #[test]
         fn test() {
             let meta = A::meta();
-            if let TypeInformation::TupleStructValue { name, inner_types } = meta {
-                assert_eq!(&"A", name);
+            if let TypeInformation::TupleStructValue(named_type_info) = meta {
+                assert_eq!("A", named_type_info.name());
+                let inner_types = named_type_info.type_info().inner_types();
                 assert_eq!(3, inner_types.len());
                 assert_eq!(&TypeInformation::U8Value(), inner_types[0]);
                 assert_eq!(&TypeInformation::U16Value(), inner_types[1]);

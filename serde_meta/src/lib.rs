@@ -204,10 +204,7 @@ pub enum TypeInformation<'a> {
     /// arrays with known length, to be able to reflect
     /// the length information
     TupleValue(TupleTypes<'a>),
-    TupleStructValue {
-        name: &'a str,
-        inner_types: &'a [&'a TypeInformation<'a>],
-    },
+    TupleStructValue(NamedTypeInformation<'a, TupleTypes<'a>>),
 
     // TODO: Unused -> Remove??
     // MapValue {
