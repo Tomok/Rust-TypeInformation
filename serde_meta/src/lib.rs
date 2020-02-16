@@ -10,7 +10,7 @@ pub struct Field<'a> {
 }
 
 impl<'a> Field<'a> {
-    pub const fn new(name: &'a str, inner_type: &'a TypeInformation<'a>) -> Self{
+    pub const fn new(name: &'a str, inner_type: &'a TypeInformation<'a>) -> Self {
         Self { name, inner_type }
     }
 
@@ -62,10 +62,7 @@ pub struct EnumVariant<'a> {
 
 impl<'a> EnumVariant<'a> {
     pub const fn new(name: &'a str, inner_type: EnumVariantType<'a>) -> Self {
-        Self {
-            name,
-            inner_type
-        }
+        Self { name, inner_type }
     }
 
     /// the name of the enums variant
@@ -76,7 +73,7 @@ impl<'a> EnumVariant<'a> {
     /// the possible kind and if used the fields inside the enum variant.
     pub fn inner_type(&'a self) -> &EnumVariantType<'a> {
         &self.inner_type
-    } 
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -100,9 +97,11 @@ pub struct SeqType<'a> {
 }
 
 impl<'a> SeqType<'a> {
-    pub const fn new(inner_type: &'a TypeInformation<'a>) -> Self { Self { inner_type } }
+    pub const fn new(inner_type: &'a TypeInformation<'a>) -> Self {
+        Self { inner_type }
+    }
 
-    pub fn inner_type(&'a self) -> &'a TypeInformation<'a>{
+    pub fn inner_type(&'a self) -> &'a TypeInformation<'a> {
         self.inner_type
     }
 }
@@ -113,9 +112,13 @@ pub struct TupleTypes<'a> {
 }
 
 impl<'a> TupleTypes<'a> {
-    pub const fn new(inner_types: &'a [&'a TypeInformation<'a>]) -> Self { Self { inner_types } }
+    pub const fn new(inner_types: &'a [&'a TypeInformation<'a>]) -> Self {
+        Self { inner_types }
+    }
 
-    pub fn inner_types(&'a self) -> &'a [&'a TypeInformation<'a>] { self.inner_types }
+    pub fn inner_types(&'a self) -> &'a [&'a TypeInformation<'a>] {
+        self.inner_types
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]

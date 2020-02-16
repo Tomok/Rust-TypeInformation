@@ -246,8 +246,7 @@ fn handle_simple_type(type_name: &str) -> Option<proc_macro2::TokenStream> {
 fn path_to_meta(path: &syn::Path) -> proc_macro2::TokenStream {
     if path.segments.len() == 1 {
         //could be a basic type
-        let simple_type_res =
-            handle_simple_type(&path.segments.first().unwrap().ident.to_string());
+        let simple_type_res = handle_simple_type(&path.segments.first().unwrap().ident.to_string());
         if let Some(res) = simple_type_res {
             return res;
         }
