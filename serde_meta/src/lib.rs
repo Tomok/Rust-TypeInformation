@@ -68,9 +68,7 @@ pub enum EnumVariantType<'a> {
     /// Enum variant without any fields.
     UnitVariant(),
     /// Enum variant for tuples.
-    TupleVariant {
-        fields: &'a [&'a TypeInformation<'a>],
-    },
+    TupleVariant(TupleTypes<'a>),
     /// Enum variant for variants containing named fields.
     StructVariant(Fields<'a>),
 }

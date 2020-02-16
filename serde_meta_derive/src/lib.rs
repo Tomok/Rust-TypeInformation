@@ -129,9 +129,7 @@ fn derive_enum_variant(variant: &syn::Variant) -> proc_macro2::TokenStream {
         syn::Fields::Unnamed(f) => {
             let fields = derive_fields_unnamed(f);
             quote! {
-                serde_meta::EnumVariantType::TupleVariant{
-                    fields: #fields
-                }
+                serde_meta::EnumVariantType::TupleVariant(TupleTypes::new( #fields ))
             }
         }
         syn::Fields::Unit => {

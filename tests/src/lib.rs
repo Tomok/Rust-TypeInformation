@@ -231,9 +231,8 @@ mod tests {
                 assert_eq!(3, possible_variants.len());
 
                 assert_eq!("IntVal", possible_variants[0].name());
-                if let EnumVariantType::TupleVariant { fields: x } =
-                    possible_variants[0].inner_type()
-                {
+                if let EnumVariantType::TupleVariant(types) = possible_variants[0].inner_type() {
+                    let x = types.inner_types();
                     assert_eq!(1, x.len());
                     assert_eq!(&TypeInformation::I32Value(), x[0]);
                 } else {
@@ -244,9 +243,7 @@ mod tests {
                 }
 
                 assert_eq!("StructVal", possible_variants[1].name());
-                if let EnumVariantType::StructVariant(fields) =
-                    possible_variants[1].inner_type()
-                {
+                if let EnumVariantType::StructVariant(fields) = possible_variants[1].inner_type() {
                     let x = fields.fields();
                     assert_eq!(1, x.len());
                     assert_eq!(&TypeInformation::BoolValue(), x[0].inner_type());

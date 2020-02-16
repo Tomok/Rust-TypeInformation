@@ -295,14 +295,15 @@ impl<'a, 'b, 'c> Serialize for SerializeableEnumVariantType<'b, 'c> {
             EnumVariantType::UnitVariant() => {
                 (serializer.serialize_unit_variant("EnumVariantType", 0, "UnitVariant"))
             }
-            EnumVariantType::TupleVariant { fields } => {
+            EnumVariantType::TupleVariant(types) => {
                 let mut st =
                     serializer.serialize_struct_variant("EnumVariantType", 1, "TupleVariant", 1)?;
-                let serializeable = SerializeableTypeInformations::new(fields, self.visited);
+                let serializeable =
+                    SerializeableTypeInformations::new(types.inner_types, self.visited);
                 st.serialize_field("fields", &serializeable)?;
                 st.end()
             }
-            EnumVariantType::StructVariant(fields)  => {
+            EnumVariantType::StructVariant(fields) => {
                 let mut st =
                     serializer.serialize_struct_variant("EnumVariantType", 2, "TupleVariant", 1)?;
                 let serializeable = SerializeableFields::new(fields.fields(), self.visited);
