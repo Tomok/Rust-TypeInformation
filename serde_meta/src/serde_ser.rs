@@ -385,7 +385,8 @@ mod tests {
 
     #[test]
     fn simple_struct_serialize_test() {
-        let to = TypeInformation::StructValue(NamedTypeInformation::new("TestObject", Fields::new(&[])));
+        let to =
+            TypeInformation::StructValue(NamedTypeInformation::new("TestObject", Fields::new(&[])));
         let res = serde_json::to_string(&to).unwrap();
         assert_eq!(
             "{\"StructValue\":{\"id\":0,\"name\":\"TestObject\",\"fields\":[]}}",
@@ -397,7 +398,8 @@ mod tests {
         name: "a",
         inner_type: &LOOPED_TEST_STRUCT,
     }]);
-    static LOOPED_TEST_STRUCT: TypeInformation = TypeInformation::StructValue(NamedTypeInformation::new(&"A", FIELDS));
+    static LOOPED_TEST_STRUCT: TypeInformation =
+        TypeInformation::StructValue(NamedTypeInformation::new(&"A", FIELDS));
 
     #[test]
     fn looped_struct_serialize_test() {

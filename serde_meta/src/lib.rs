@@ -40,7 +40,7 @@ impl<'a> Fields<'a> {
 }
 
 impl<'a> From<&'a [Field<'a>]> for Fields<'a> {
-    fn from(a: &'a [Field<'a>]) -> Self { 
+    fn from(a: &'a [Field<'a>]) -> Self {
         Self::new(a)
     }
 }
@@ -270,9 +270,9 @@ mod tests {
 
         #[test]
         fn test_structs_can_reference_themselves() {
-            if let StructValue (NamedTypeInformation {
+            if let StructValue(NamedTypeInformation {
                 name: _,
-                type_info:  fields,
+                type_info: fields,
             }) = TEST_STRUCT
             {
                 //make sure it is the same instance

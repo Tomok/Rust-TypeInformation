@@ -349,7 +349,7 @@ mod test {
         let res = internal_derive_serde_meta(input);
         let expectation = quote! {
             pub static _A_META_INFO: TypeInformation<'static> = serde_meta::TypeInformation::StructValue(
-                NamedTypeInformation::new("A", 
+                NamedTypeInformation::new("A",
                 serde_meta::Fields::new(&[]))
             );
 
