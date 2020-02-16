@@ -179,7 +179,7 @@ fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> proc_macro
         }
         syn::Fields::Unit => {
             let res = quote! {
-                serde_meta::TypeInformation::UnitStructValue{ name: #strident }
+                serde_meta::TypeInformation::UnitStructValue( serde_meta::UnitStructType::new( #strident ))
             };
             res
         }
@@ -340,9 +340,7 @@ mod test {
         let input = quote! { struct A; };
         let res = internal_derive_serde_meta(input);
         let expectation = quote! {
-            pub static _A_META_INFO: TypeInformation<'static> = serde_meta::TypeInformation::UnitStructValue {
-                    name: "A"
-            };
+            pub static _A_META_INFO: TypeInformation<'static> = serde_meta::TypeInformation::UnitStructValue( serde_meta::UnitStructType::new( "A" ) );
 
             impl SerdeMeta for A {
                 fn meta() -> &'static serde_meta::TypeInformation<'static> {

@@ -80,6 +80,22 @@ impl<'a> EnumVariant<'a> {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+pub struct UnitStructType<'a> {
+    name: &'a str,
+}
+
+impl<'a> UnitStructType<'a> {
+    pub const fn new(name: &'a str) -> Self {
+        Self { name }
+    }
+
+    pub fn name(&self) -> &str {
+        self.name
+    }
+}
+
+
+#[derive(Debug, PartialEq, Eq)]
 /// All possible kinds of TypeInformation delivered by `meta` function
 /// or contained in the structs returned by it.
 pub enum TypeInformation<'a> {
@@ -137,9 +153,7 @@ pub enum TypeInformation<'a> {
     ///   f: (),
     /// }
     /// ```
-    UnitStructValue {
-        name: &'a str,
-    },
+    UnitStructValue(UnitStructType<'a>),
 
     // TODO: Unused -> Remove??
     // NewTypeStructValue {

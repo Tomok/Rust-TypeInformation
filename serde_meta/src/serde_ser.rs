@@ -109,7 +109,8 @@ impl<'a, 'b, 'c> Serialize for SerializeableTypeInformation<'b, 'c> {
                     st.serialize_field("inner_type", &serializeable_inner_type)?;
                     st.end()
                 }
-                TypeInformation::UnitStructValue { name } => {
+                TypeInformation::UnitStructValue( unit_struct ) => {
+                    let name = unit_struct.name();
                     let mut st = serializer.serialize_struct_variant(
                         "TypeInformation",
                         17,
