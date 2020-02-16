@@ -149,6 +149,21 @@ impl<'a> TupleTypes<'a> {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+pub struct EnumType<'a> {
+    possible_variants: &'a [EnumVariant<'a>],
+}
+
+impl<'a> EnumType<'a> {
+    pub const fn new(possible_variants: &'a [EnumVariant<'a>]) -> Self {
+        Self { possible_variants }
+    }
+
+    pub fn possible_variants(&'a self) -> &'a [EnumVariant<'a>] {
+        self.possible_variants
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 /// All possible kinds of TypeInformation delivered by `meta` function
 /// or contained in the structs returned by it.
 pub enum TypeInformation<'a> {
@@ -239,10 +254,7 @@ pub enum TypeInformation<'a> {
     /// Note that SERDE does not know this type, as it does
     /// not need to transfer the information, that a enum was
     /// used, just which value it had.
-    EnumValue {
-        name: &'a str,
-        possible_variants: &'a [EnumVariant<'a>],
-    },
+    EnumValue(NamedTypeInformation<'a, EnumType<'a>>),
 }
 
 /// Implement this trait or derive `SerdeMeta` to add a

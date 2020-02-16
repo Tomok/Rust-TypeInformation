@@ -95,10 +95,7 @@ fn derive_enum(ident: &syn::Ident, data_enum: syn::DataEnum) -> proc_macro2::Tok
     let strident = format!("{}", ident);
     let variants = derive_enum_variants(data_enum.variants);
     quote! {
-        serde_meta::TypeInformation::EnumValue {
-            name: #strident,
-            possible_variants: #variants
-        }
+        serde_meta::TypeInformation::EnumValue(NamedTypeInformation::new(#strident, EnumType::new(#variants)))
     }
 }
 

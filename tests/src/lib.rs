@@ -222,12 +222,9 @@ mod tests {
         #[test]
         fn test() {
             let meta = A::meta();
-            if let TypeInformation::EnumValue {
-                name,
-                possible_variants,
-            } = meta
-            {
-                assert_eq!(&"A", name);
+            if let TypeInformation::EnumValue(named_type_info) = meta {
+                let possible_variants = named_type_info.type_info().possible_variants();
+                assert_eq!("A", named_type_info.name());
                 assert_eq!(3, possible_variants.len());
 
                 assert_eq!("IntVal", possible_variants[0].name());

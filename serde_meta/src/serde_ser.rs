@@ -177,10 +177,7 @@ impl<'a, 'b, 'c> Serialize for SerializeableTypeInformation<'b, 'c> {
                     st.serialize_field("fields", &serializeable_fields)?;
                     st.end()
                 }
-                TypeInformation::EnumValue {
-                    name,
-                    possible_variants,
-                } => {
+                TypeInformation::EnumValue(named_type_info) => {
                     let mut st = serializer.serialize_struct_variant(
                         "TypeInformation",
                         20,
@@ -189,7 +186,8 @@ impl<'a, 'b, 'c> Serialize for SerializeableTypeInformation<'b, 'c> {
                     )?;
                     let id = visited.register(self_mem_pos);
                     st.serialize_field("id", &id)?;
-                    st.serialize_field("name", name)?;
+                    st.serialize_field("name", named_type_info.name())?;
+                    let possible_variants = named_type_info.type_info().possible_variants();
                     let serializeable = SerializeableEnumVariants::new(possible_variants, visited);
                     st.serialize_field("possible_variants", &serializeable)?;
                     st.end()
