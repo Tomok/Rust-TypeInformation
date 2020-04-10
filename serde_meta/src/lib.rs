@@ -5,8 +5,44 @@ mod serde_ser;
 #[derive(Debug, PartialEq, Eq)]
 /// Field inside a struct
 pub struct Field<'a> {
-    pub name: &'a str,
-    pub inner_type: &'a TypeInformation<'a>,
+    name: &'a str,
+    inner_type: &'a TypeInformation<'a>,
+}
+
+impl<'a> Field<'a> {
+    pub const fn new(name: &'a str, inner_type: &'a TypeInformation<'a>) -> Self {
+        Self { name, inner_type }
+    }
+
+    pub fn name(&'a self) -> &'a str {
+        self.name
+    }
+
+    pub fn inner_type(&'a self) -> &'a TypeInformation<'a> {
+        self.inner_type
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct Fields<'a> {
+    fields: &'a [Field<'a>],
+}
+
+impl<'a> Fields<'a> {
+    pub const fn new(fields: &'a [Field<'a>]) -> Self {
+        //TODO: maybe check for duplicate names?
+        Self { fields }
+    }
+
+    pub fn fields(&'a self) -> &'a [Field<'a>] {
+        self.fields
+    }
+}
+
+impl<'a> From<&'a [Field<'a>]> for Fields<'a> {
+    fn from(a: &'a [Field<'a>]) -> Self {
+        Self::new(a)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -32,20 +68,99 @@ pub enum EnumVariantType<'a> {
     /// Enum variant without any fields.
     UnitVariant(),
     /// Enum variant for tuples.
-    TupleVariant {
-        fields: &'a [&'a TypeInformation<'a>],
-    },
+    TupleVariant(TupleTypes<'a>),
     /// Enum variant for variants containing named fields.
-    StructVariant { fields: &'a [Field<'a>] },
+    StructVariant(Fields<'a>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
 /// Meta Data for an enum variant
 pub struct EnumVariant<'a> {
+    name: &'a str,
+    inner_type: EnumVariantType<'a>,
+}
+
+impl<'a> EnumVariant<'a> {
+    pub const fn new(name: &'a str, inner_type: EnumVariantType<'a>) -> Self {
+        Self { name, inner_type }
+    }
+
     /// the name of the enums variant
-    pub name: &'a str,
+    pub fn name(&'a self) -> &'a str {
+        self.name
+    }
+
     /// the possible kind and if used the fields inside the enum variant.
-    pub inner_type: EnumVariantType<'a>,
+    pub fn inner_type(&'a self) -> &EnumVariantType<'a> {
+        &self.inner_type
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct NamedTypeInformation<'a, I: Sized> {
+    name: &'a str,
+    type_info: I,
+}
+
+impl<'a, I: Sized> NamedTypeInformation<'a, I> {
+    pub const fn new(name: &'a str, type_info: I) -> Self {
+        Self { name, type_info }
+    }
+
+    pub fn name(&self) -> &str {
+        self.name
+    }
+
+    pub fn type_info(&self) -> &I {
+        &self.type_info
+    }
+}
+
+pub type UnitStructType<'a> = NamedTypeInformation<'a, ()>;
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct SeqType<'a> {
+    inner_type: &'a TypeInformation<'a>,
+}
+
+impl<'a> SeqType<'a> {
+    pub const fn new(inner_type: &'a TypeInformation<'a>) -> Self {
+        Self { inner_type }
+    }
+
+    pub fn inner_type(&'a self) -> &'a TypeInformation<'a> {
+        self.inner_type
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct TupleTypes<'a> {
+    inner_types: &'a [&'a TypeInformation<'a>],
+}
+
+impl<'a> TupleTypes<'a> {
+    pub const fn new(inner_types: &'a [&'a TypeInformation<'a>]) -> Self {
+        Self { inner_types }
+    }
+
+    pub fn inner_types(&'a self) -> &'a [&'a TypeInformation<'a>] {
+        self.inner_types
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct EnumType<'a> {
+    possible_variants: &'a [EnumVariant<'a>],
+}
+
+impl<'a> EnumType<'a> {
+    pub const fn new(possible_variants: &'a [EnumVariant<'a>]) -> Self {
+        Self { possible_variants }
+    }
+
+    pub fn possible_variants(&'a self) -> &'a [EnumVariant<'a>] {
+        self.possible_variants
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -106,9 +221,7 @@ pub enum TypeInformation<'a> {
     ///   f: (),
     /// }
     /// ```
-    UnitStructValue {
-        name: &'a str,
-    },
+    UnitStructValue(UnitStructType<'a>),
 
     // TODO: Unused -> Remove??
     // NewTypeStructValue {
@@ -120,30 +233,20 @@ pub enum TypeInformation<'a> {
     // },
     /// Used for all kinds of dynamically sized sequences,
     /// e.g. `[u8]`
-    SeqValue {
-        inner_type: &'a TypeInformation<'a>,
-    },
+    SeqValue(SeqType<'a>),
 
     /// TupleValue used for tuples, also used for
     /// arrays with known length, to be able to reflect
     /// the length information
-    TupleValue {
-        inner_types: &'a [&'a TypeInformation<'a>],
-    },
-    TupleStructValue {
-        name: &'a str,
-        inner_types: &'a [&'a TypeInformation<'a>],
-    },
+    TupleValue(TupleTypes<'a>),
+    TupleStructValue(NamedTypeInformation<'a, TupleTypes<'a>>),
 
     // TODO: Unused -> Remove??
     // MapValue {
     //     key_type: &'static TypeInformation,
     //     value_type: &'static TypeInformation,
     // },
-    StructValue {
-        name: &'a str,
-        fields: &'a [Field<'a>],
-    },
+    StructValue(NamedTypeInformation<'a, Fields<'a>>),
 
     /// Used for an Enum and contains all possible variants
     /// of it.
@@ -151,10 +254,7 @@ pub enum TypeInformation<'a> {
     /// Note that SERDE does not know this type, as it does
     /// not need to transfer the information, that a enum was
     /// used, just which value it had.
-    EnumValue {
-        name: &'a str,
-        possible_variants: &'a [EnumVariant<'a>],
-    },
+    EnumValue(NamedTypeInformation<'a, EnumType<'a>>),
 }
 
 /// Implement this trait or derive `SerdeMeta` to add a
@@ -174,24 +274,21 @@ mod tests {
 
         use std::ptr;
 
-        static FIELDS: &[Field] = &[Field {
+        static FIELDS: Fields = Fields::new(&[Field {
             name: "a",
             inner_type: &TEST_STRUCT,
-        }];
-        static TEST_STRUCT: TypeInformation = StructValue {
-            name: &"A",
-            fields: FIELDS,
-        };
+        }]);
+        static TEST_STRUCT: TypeInformation = StructValue(NamedTypeInformation::new(&"A", FIELDS));
 
         #[test]
         fn test_structs_can_reference_themselves() {
-            if let StructValue {
+            if let StructValue(NamedTypeInformation {
                 name: _,
-                fields: [field_struct],
-            } = TEST_STRUCT
+                type_info: fields,
+            }) = TEST_STRUCT
             {
                 //make sure it is the same instance
-                assert!(ptr::eq(&TEST_STRUCT, field_struct.inner_type));
+                assert!(ptr::eq(&TEST_STRUCT, fields.fields()[0].inner_type()));
             } else {
                 panic!("TEST_STRUCT did not contain a TEST_STRUCT as field");
             }

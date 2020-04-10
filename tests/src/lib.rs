@@ -15,11 +15,12 @@ mod tests {
         #[test]
         fn test() {
             let meta = A::meta();
-            if let TypeInformation::StructValue { name, fields } = meta {
-                assert_eq!(&"A", name);
+            if let TypeInformation::StructValue(named_type_info) = meta {
+                assert_eq!("A", named_type_info.name());
+                let fields = named_type_info.type_info().fields();
                 assert_eq!(1, fields.len());
-                assert_eq!("f", fields[0].name);
-                assert_eq!(&TypeInformation::U32Value(), fields[0].inner_type);
+                assert_eq!("f", fields[0].name());
+                assert_eq!(&TypeInformation::U32Value(), fields[0].inner_type());
             } else {
                 panic!("Expected StructValue, but got {:#?}", meta);
             }
@@ -43,10 +44,11 @@ mod tests {
         #[test]
         fn test() {
             let meta = A::meta();
-            if let TypeInformation::StructValue { name, fields } = meta {
-                assert_eq!(&"A", name);
+            if let TypeInformation::StructValue(named_type_info) = meta {
+                let fields = named_type_info.type_info().fields();
+                assert_eq!("A", named_type_info.name());
                 let expected_fields: &[Field] = &[];
-                assert_eq!(&expected_fields, fields);
+                assert_eq!(expected_fields, fields);
             } else {
                 panic!("Expected StructValue, but got {:#?}", meta);
             }
@@ -79,11 +81,12 @@ mod tests {
         #[test]
         fn test() {
             let meta = A::meta();
-            if let TypeInformation::StructValue { name, fields } = meta {
-                assert_eq!(&"A", name);
+            if let TypeInformation::StructValue(named_type_info) = meta {
+                assert_eq!("A", named_type_info.name());
+                let fields = named_type_info.type_info().fields();
                 assert_eq!(1, fields.len());
-                assert_eq!("f", fields[0].name);
-                assert_eq!(B::meta(), fields[0].inner_type);
+                assert_eq!("f", fields[0].name());
+                assert_eq!(B::meta(), fields[0].inner_type());
             } else {
                 panic!("Expected StructValue, but got {:#?}", meta);
             }
@@ -108,8 +111,9 @@ mod tests {
         #[test]
         fn test() {
             let meta = A::meta();
-            if let TypeInformation::TupleStructValue { name, inner_types } = meta {
-                assert_eq!(&"A", name);
+            if let TypeInformation::TupleStructValue(named_type_info) = meta {
+                assert_eq!("A", named_type_info.name());
+                let inner_types = named_type_info.type_info().inner_types();
                 assert_eq!(3, inner_types.len());
                 assert_eq!(&TypeInformation::U8Value(), inner_types[0]);
                 assert_eq!(&TypeInformation::U16Value(), inner_types[1]);
@@ -140,17 +144,19 @@ mod tests {
         #[test]
         fn test() {
             let meta = A::meta();
-            if let TypeInformation::StructValue { name, fields } = meta {
-                assert_eq!(&"A", name);
+            if let TypeInformation::StructValue(named_type_info) = meta {
+                assert_eq!("A", named_type_info.name());
+                let fields = named_type_info.type_info().fields();
                 assert_eq!(1, fields.len());
-                assert_eq!("f", fields[0].name);
-                if let TypeInformation::TupleValue { inner_types } = fields[0].inner_type {
+                assert_eq!("f", fields[0].name());
+                if let TypeInformation::TupleValue(tuple_types) = fields[0].inner_type() {
+                    let inner_types = tuple_types.inner_types();
                     assert_eq!(3, inner_types.len());
                     for &t in inner_types.iter() {
                         assert_eq!(&TypeInformation::U8Value(), t);
                     }
                 } else {
-                    panic!("Expected TupleValue, but got {:#?}", fields[0].inner_type);
+                    panic!("Expected TupleValue, but got {:#?}", fields[0].inner_type());
                 }
             } else {
                 panic!("Expected StructValue, but got {:#?}", meta);
@@ -178,16 +184,15 @@ mod tests {
         #[test]
         fn test() {
             let meta = A::meta();
-            if let TypeInformation::StructValue { name, fields } = meta {
-                assert_eq!(&"A", name);
+            if let TypeInformation::StructValue(named_type_info) = meta {
+                assert_eq!("A", named_type_info.name());
+                let fields = named_type_info.type_info().fields();
                 assert_eq!(1, fields.len());
-                assert_eq!("f", fields[0].name);
-                if let TypeInformation::SeqValue { inner_type } = fields[0].inner_type {
-                    //as if let adds a reference, to the reference in SeqValue.inner_type,
-                    // a check against &&TypeInformation::U16Value is necessary`:w
-                    assert_eq!(&&TypeInformation::U16Value(), inner_type);
+                assert_eq!("f", fields[0].name());
+                if let TypeInformation::SeqValue(seq_type) = fields[0].inner_type() {
+                    assert_eq!(&TypeInformation::U16Value(), seq_type.inner_type());
                 } else {
-                    panic!("Expected SeqValue, but got {:#?}", fields[0].inner_type);
+                    panic!("Expected SeqValue, but got {:#?}", fields[0].inner_type());
                 }
             } else {
                 panic!("Expected StructValue, but got {:#?}", meta);
@@ -217,44 +222,40 @@ mod tests {
         #[test]
         fn test() {
             let meta = A::meta();
-            if let TypeInformation::EnumValue {
-                name,
-                possible_variants,
-            } = meta
-            {
-                assert_eq!(&"A", name);
+            if let TypeInformation::EnumValue(named_type_info) = meta {
+                let possible_variants = named_type_info.type_info().possible_variants();
+                assert_eq!("A", named_type_info.name());
                 assert_eq!(3, possible_variants.len());
 
-                assert_eq!("IntVal", possible_variants[0].name);
-                if let EnumVariantType::TupleVariant { fields: x } = possible_variants[0].inner_type
-                {
+                assert_eq!("IntVal", possible_variants[0].name());
+                if let EnumVariantType::TupleVariant(types) = possible_variants[0].inner_type() {
+                    let x = types.inner_types();
                     assert_eq!(1, x.len());
                     assert_eq!(&TypeInformation::I32Value(), x[0]);
                 } else {
                     panic!(
                         "Expected TupleVariant, but found {:#?}",
-                        possible_variants[0].inner_type
+                        possible_variants[0].inner_type()
                     );
                 }
 
-                assert_eq!("StructVal", possible_variants[1].name);
-                if let EnumVariantType::StructVariant { fields: x } =
-                    possible_variants[1].inner_type
-                {
+                assert_eq!("StructVal", possible_variants[1].name());
+                if let EnumVariantType::StructVariant(fields) = possible_variants[1].inner_type() {
+                    let x = fields.fields();
                     assert_eq!(1, x.len());
-                    assert_eq!(&TypeInformation::BoolValue(), x[0].inner_type);
-                    assert_eq!("field", x[0].name);
+                    assert_eq!(&TypeInformation::BoolValue(), x[0].inner_type());
+                    assert_eq!("field", x[0].name());
                 } else {
                     panic!(
                         "Expected StructVariant, but found {:#?}",
-                        possible_variants[0].inner_type
+                        possible_variants[0].inner_type()
                     );
                 }
 
-                assert_eq!("UnitVal", possible_variants[2].name);
+                assert_eq!("UnitVal", possible_variants[2].name());
                 assert_eq!(
-                    EnumVariantType::UnitVariant(),
-                    possible_variants[2].inner_type
+                    &EnumVariantType::UnitVariant(),
+                    possible_variants[2].inner_type()
                 )
             } else {
                 panic!("Expected EnumValue but got {:#?}", meta);
