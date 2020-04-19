@@ -2,15 +2,17 @@
 #[cfg(feature = "serde_ser")]
 mod serde_ser;
 
+type TypeInformationRef<'a> = &'a TypeInformation<'a>;
+
 #[derive(Debug, PartialEq, Eq)]
 /// Field inside a struct
 pub struct Field<'a> {
     name: &'a str,
-    inner_type: &'a TypeInformation<'a>,
+    inner_type: TypeInformationRef<'a>,
 }
 
 impl<'a> Field<'a> {
-    pub const fn new(name: &'a str, inner_type: &'a TypeInformation<'a>) -> Self {
+    pub const fn new(name: &'a str, inner_type: TypeInformationRef<'a>) -> Self {
         Self { name, inner_type }
     }
 
@@ -18,7 +20,7 @@ impl<'a> Field<'a> {
         self.name
     }
 
-    pub fn inner_type(&'a self) -> &'a TypeInformation<'a> {
+    pub fn inner_type(&'a self) -> TypeInformationRef<'a> {
         self.inner_type
     }
 }
@@ -120,30 +122,30 @@ pub type UnitStructType<'a> = NamedTypeInformation<'a, ()>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SeqType<'a> {
-    inner_type: &'a TypeInformation<'a>,
+    inner_type: TypeInformationRef<'a>,
 }
 
 impl<'a> SeqType<'a> {
-    pub const fn new(inner_type: &'a TypeInformation<'a>) -> Self {
+    pub const fn new(inner_type: TypeInformationRef<'a>) -> Self {
         Self { inner_type }
     }
 
-    pub fn inner_type(&'a self) -> &'a TypeInformation<'a> {
+    pub fn inner_type(&'a self) -> TypeInformationRef<'a> {
         self.inner_type
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct TupleTypes<'a> {
-    inner_types: &'a [&'a TypeInformation<'a>],
+    inner_types: &'a [TypeInformationRef<'a>],
 }
 
 impl<'a> TupleTypes<'a> {
-    pub const fn new(inner_types: &'a [&'a TypeInformation<'a>]) -> Self {
+    pub const fn new(inner_types: &'a [TypeInformationRef<'a>]) -> Self {
         Self { inner_types }
     }
 
-    pub fn inner_types(&'a self) -> &'a [&'a TypeInformation<'a>] {
+    pub fn inner_types(&'a self) -> &'a [TypeInformationRef<'a>] {
         self.inner_types
     }
 }
@@ -207,7 +209,7 @@ pub enum TypeInformation<'a> {
 
     // TODO should this remain, or is it just there because serde has it?
     OptionValue {
-        inner_type: &'a TypeInformation<'a>,
+        inner_type: TypeInformationRef<'a>,
     },
 
     // TODO: Unused -> Remove??
