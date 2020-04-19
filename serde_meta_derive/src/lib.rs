@@ -77,11 +77,9 @@ fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::To
     };
     let meta_info_name_ident = build_static_variable_name(&ident);
     let res = quote! {
-        pub static #meta_info_name_ident: TypeInformation<'static> = #gen;
-
         impl #lifet SerdeMeta for #ident #lifet {
-            fn meta() -> &'static serde_meta::TypeInformation<'static> {
-                &#meta_info_name_ident
+            fn meta() -> serde_meta::TypeInformation<'static> {
+                #gen
             }
         }
     };
@@ -329,11 +327,9 @@ mod test {
         let input = quote! { struct A; };
         let res = internal_derive_serde_meta(input);
         let expectation = quote! {
-            pub static _A_META_INFO: TypeInformation<'static> = serde_meta::TypeInformation::UnitStructValue( serde_meta::UnitStructType::new( "A", () ) );
-
             impl SerdeMeta for A {
-                fn meta() -> &'static serde_meta::TypeInformation<'static> {
-                    & _A_META_INFO
+                fn meta() -> serde_meta::TypeInformation<'static> {
+                    serde_meta::TypeInformation::UnitStructValue( serde_meta::UnitStructType::new( "A", () ) )
                 }
             }
         };
@@ -345,14 +341,13 @@ mod test {
         let input = quote! { struct A {} };
         let res = internal_derive_serde_meta(input);
         let expectation = quote! {
-            pub static _A_META_INFO: TypeInformation<'static> = serde_meta::TypeInformation::StructValue(
-                NamedTypeInformation::new("A",
-                serde_meta::Fields::new(&[]))
-            );
-
             impl SerdeMeta for A {
-                fn meta() -> &'static serde_meta::TypeInformation<'static> {
-                    & _A_META_INFO
+                fn meta() -> serde_meta::TypeInformation<'static> {
+                    serde_meta::TypeInformation::StructValue(
+                        NamedTypeInformation::new("A",
+                            serde_meta::Fields::new(&[])
+                        )
+                    )
                 }
             }
         };

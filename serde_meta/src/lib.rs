@@ -263,7 +263,7 @@ pub enum TypeInformation<'a> {
 /// `meta` function to your class providing meta data about it.
 pub trait SerdeMeta {
     /// Provide Meta Data for this struct.
-    fn meta() -> &'static TypeInformation<'static>;
+    fn meta() -> TypeInformation<'static>;
 }
 
 #[cfg(test)]
