@@ -192,7 +192,10 @@ fn derive_fields_named(fields: &syn::FieldsNamed) -> proc_macro2::TokenStream {
 /// the corresponding meta data, i.e. a reference to an array of references
 /// to the corresponding meta data type objects
 fn derive_fields_unnamed(fields: &syn::FieldsUnnamed) -> proc_macro2::TokenStream {
-    let fields_iter = fields.unnamed.iter().map(|f| derive_unnamed_tuple_element(&f.ty));
+    let fields_iter = fields
+        .unnamed
+        .iter()
+        .map(|f| derive_unnamed_tuple_element(&f.ty));
 
     quote! {
         Box::new([#(#fields_iter),*])
@@ -306,7 +309,6 @@ fn derive_unnamed_tuple_element(ty: &syn::Type) -> proc_macro2::TokenStream {
     map_res
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -386,11 +388,11 @@ mod test {
 
     #[test]
     fn test_type_to_meta_slice() {
-        let input = parse_quote!{[u8]};
+        let input = parse_quote! {[u8]};
         let expectation = quote! {
             serde_meta::TypeInformation::SeqValue(serde_meta::SeqType::new( || u8::meta() ))
         };
-        
+
         let res = type_to_meta(&input);
 
         assert_eq!(res.to_string(), expectation.to_string());
@@ -399,13 +401,13 @@ mod test {
     #[test]
     fn test_array_to_meta() {
         // as parse is not implemented for TypeArray, parse an ExprType and get the TypeArray from there
-        let typedef: syn::ExprType = parse_quote!{ a: [u8; 2]};
+        let typedef: syn::ExprType = parse_quote! { a: [u8; 2]};
         let input = match *typedef.ty {
             syn::Type::Array(a) => a,
             _ => panic!("typedef was messed up and did not return an Array as type..."),
         };
 
-        let expectation= quote!{
+        let expectation = quote! {
             serde_meta::TypeInformation::TupleValue(
                 serde_meta::TupleTypes::new(Box::new([
                     serde_meta::TupleType::new( || u8::meta() ),
@@ -423,12 +425,12 @@ mod test {
     fn test_derive_array_struct() {
         let input = quote! { struct A {f: [u8; 3]} };
         let res = internal_derive_serde_meta(input);
-        let expectation = quote! { 
+        let expectation = quote! {
             impl SerdeMeta for A {
                 fn meta() -> serde_meta::TypeInformation<'static> {
                     serde_meta::TypeInformation::StructValue(
-                        serde_meta::NamedTypeInformation::new("A", 
-                            serde_meta::Fields::new(Box::new([serde_meta::Field::new("f", 
+                        serde_meta::NamedTypeInformation::new("A",
+                            serde_meta::Fields::new(Box::new([serde_meta::Field::new("f",
                                 || serde_meta::TypeInformation::TupleValue(
                                     serde_meta::TupleTypes::new(Box::new([
                                         serde_meta::TupleType::new( || u8::meta() ),
