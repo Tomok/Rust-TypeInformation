@@ -282,31 +282,90 @@ pub trait SerdeMeta {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lazy_static::lazy_static;
     use TypeInformation::*;
 
     mod test_structs_can_reference_themselves {
         use super::*;
 
-        use std::ptr;
+        fn get_test_struct() -> TypeInformation<'static> {
+            LOOPED_TEST_STRUCT.clone()
+        }
 
-        static FIELDS: Fields = Fields::new(&[Field {
-            name: "a",
-            inner_type: &TEST_STRUCT,
-        }]);
-        static TEST_STRUCT: TypeInformation = StructValue(NamedTypeInformation::new(&"A", FIELDS));
+        lazy_static! {
+            static ref FIELDS: Fields<'static> = Fields::new(Box::new([Field {
+                name: "a",
+                inner_type: get_test_struct,
+            }]));
+            static ref LOOPED_TEST_STRUCT: TypeInformation<'static> =
+                TypeInformation::StructValue(NamedTypeInformation::new(&"A", FIELDS.clone()));
+        }
 
         #[test]
         fn test_structs_can_reference_themselves() {
             if let StructValue(NamedTypeInformation {
                 name: _,
                 type_info: fields,
-            }) = TEST_STRUCT
+            }) = get_test_struct()
             {
-                //make sure it is the same instance
-                assert!(ptr::eq(&TEST_STRUCT, fields.fields()[0].inner_type()));
+                let test_struct = get_test_struct();
+                //make sure test_struct and the one in the field of the let statement above are equal
+                assert_eq!(&test_struct, &fields.fields()[0].inner_type());
             } else {
                 panic!("TEST_STRUCT did not contain a TEST_STRUCT as field");
             }
+        }
+    }
+
+    /// tests that two structs with identical structure, but not identical themselves are
+    /// not determined to be equal
+    mod structs_with_identical_structure {
+        use super::*;
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        fn get_test_struct() -> TypeInformation<'static> {
+            LOOPED_TEST_STRUCT.clone()
+        }
+
+        lazy_static! {
+            static ref FIELDS: Fields<'static> = Fields::new(Box::new([Field {
+                name: "a",
+                inner_type: get_test_struct,
+            }]));
+            static ref LOOPED_TEST_STRUCT: TypeInformation<'static> =
+                TypeInformation::StructValue(NamedTypeInformation::new(&"A", FIELDS.clone()));
+        }
+
+        fn get_test_struct2() -> TypeInformation<'static> {
+            LOOPED_TEST_STRUCT2.clone()
+        }
+
+        lazy_static! {
+            static ref FIELDS2: Fields<'static> = Fields::new(Box::new([Field {
+                name: "a",
+                inner_type: get_test_struct2,
+            }]));
+            static ref LOOPED_TEST_STRUCT2: TypeInformation<'static> =
+                TypeInformation::StructValue(NamedTypeInformation::new(&"A", FIELDS2.clone()));
+        }
+        #[test]
+        fn test_equal() {
+            assert_ne!(get_test_struct(), get_test_struct2());
+        }
+
+        fn calculate_hash<T: Hash>(t: &T) -> u64 {
+            let mut s = DefaultHasher::new();
+            t.hash(&mut s);
+            s.finish()
+        }
+
+        #[test]
+        fn test_hash() {
+            assert_ne!(
+                calculate_hash(&get_test_struct()),
+                calculate_hash(&get_test_struct2())
+            );
         }
     }
 }
