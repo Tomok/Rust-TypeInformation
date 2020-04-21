@@ -346,21 +346,22 @@ mod test {
     fn test_derive_array_struct() {
         let input = quote! { struct A {f: [u8; 3]} };
         let res = internal_derive_serde_meta(input);
+        let expected_fields = quote! {
+            serde_meta::Fields::new(Box::new([serde_meta::Field::new("f",
+                || serde_meta::TypeInformation::TupleValue(
+                    serde_meta::TupleTypes::new(Box::new([
+                        serde_meta::TupleType::new( || u8::meta() ),
+                        serde_meta::TupleType::new( || u8::meta() ),
+                        serde_meta::TupleType::new( || u8::meta() )
+                    ]))
+                )
+            )]))
+        };
         let expectation = quote! {
             impl SerdeMeta for A {
                 fn meta() -> serde_meta::TypeInformation<'static> {
                     serde_meta::TypeInformation::StructValue(
-                        serde_meta::NamedTypeInformation::new("A",
-                            serde_meta::Fields::new(Box::new([serde_meta::Field::new("f",
-                                || serde_meta::TypeInformation::TupleValue(
-                                    serde_meta::TupleTypes::new(Box::new([
-                                        serde_meta::TupleType::new( || u8::meta() ),
-                                        serde_meta::TupleType::new( || u8::meta() ),
-                                        serde_meta::TupleType::new( || u8::meta() )
-                                    ]))
-                                )
-                            )]))
-                        )
+                        serde_meta::NamedTypeInformation::new("A", #expected_fields)
                     )
                 }
             }
