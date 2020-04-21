@@ -15,38 +15,6 @@ pub fn derive_serde_meta(_item: TokenStream) -> TokenStream {
     internal_derive_serde_meta(_item.into()).into()
 }
 
-/// converts the ident of a struct to a String with the name of the
-/// corresponding internal meta-data variable name.
-///
-/// For example "A" will return "_A_META_INFO"
-fn build_static_variable_name_str(ident: &dyn ToString) -> String {
-    // TODO: change parameter type to &syn::Ident?
-    format!("_{}_META_INFO", ident.to_string())
-}
-
-/// converts the ident of a struct to a syn::Ident with the name of the
-/// corresponding internal meta-data variable name.
-fn build_static_variable_name(ident: &syn::Ident) -> syn::Ident {
-    let meta_info_name_str = build_static_variable_name_str(ident);
-    syn::Ident::new(&meta_info_name_str, ident.span())
-}
-
-/// takes a given `syn::Path` and returns the corresponding
-/// `syn::Path` to the meta object.
-///
-/// Does not check, if a meta object exists for that path!
-fn build_static_variable_path(path: &syn::Path) -> syn::Path {
-    let mut res = path.clone();
-    let item = res.segments.pop().unwrap();
-    let last_value = item.value().ident.clone();
-    let new_value = build_static_variable_name(&last_value);
-    let mut v = item.into_value();
-    v.ident = new_value;
-    res.segments.push(v);
-    assert!(res.segments.last().unwrap().ident == build_static_variable_name(&last_value));
-    res
-}
-
 /// library internal function to automatically generate a `meta()` function for a given struct
 ///
 /// using a separate function with proc_macro2::TokenStreams to implement the
@@ -75,7 +43,6 @@ fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::To
             input.data
         ),
     };
-    let meta_info_name_ident = build_static_variable_name(&ident);
     let res = quote! {
         impl #lifet SerdeMeta for #ident #lifet {
             fn meta() -> serde_meta::TypeInformation<'static> {
@@ -202,34 +169,6 @@ fn derive_fields_unnamed(fields: &syn::FieldsUnnamed) -> proc_macro2::TokenStrea
     }
 }
 
-/// Tries to convert a type_name to tokens generating a corresponding
-/// `TypeInformation` object.
-/// Returns `None` if the conversion was not possible.
-fn handle_simple_type(type_name: &str) -> Option<proc_macro2::TokenStream> {
-    match type_name {
-        "bool" => Some(quote! { serde_meta::TypeInformation::BoolValue() }),
-        "i8" => Some(quote! { serde_meta::TypeInformation::I8Value() }),
-        "i16" => Some(quote! { serde_meta::TypeInformation::I16Value() }),
-        "i32" => Some(quote! { serde_meta::TypeInformation::I32Value() }),
-        "i64" => Some(quote! { serde_meta::TypeInformation::I64Value() }),
-        "i128" => Some(quote! { serde_meta::TypeInformation::I128Value() }),
-
-        "u8" => Some(quote! { serde_meta::TypeInformation::U8Value() }),
-        "u16" => Some(quote! { serde_meta::TypeInformation::U16Value() }),
-        "u32" => Some(quote! { serde_meta::TypeInformation::U32Value() }),
-        "u64" => Some(quote! { serde_meta::TypeInformation::U64Value() }),
-        "u128" => Some(quote! { serde_meta::TypeInformation::U128Value() }),
-
-        "f32" => Some(quote! { serde_meta::TypeInformation::F32Value() }),
-        "f64" => Some(quote! { serde_meta::TypeInformation::F64Value() }),
-
-        "char" => Some(quote! { serde_meta::TypeInformation::CharValue() }),
-
-        "str" => Some(quote! { serde_meta::TypeInformation::StringValue() }),
-        _ => None,
-    }
-}
-
 /// takes a given `syn::Path` and returns the corresponding
 /// `TokenStream` describing the path to the meta object,
 /// or if it is a simple type a corresponding TypeInformation
@@ -315,24 +254,6 @@ mod test {
 
     use quote::quote;
     use syn::parse_quote;
-
-    #[test]
-    fn test_build_static_variable_name_str() {
-        assert_eq!("_A_META_INFO", build_static_variable_name_str(&"A"));
-    }
-
-    #[test]
-    fn test_handle_simple_type_return_none() {
-        assert_eq!(handle_simple_type("NotASimpleType").is_none(), true);
-    }
-
-    #[test]
-    fn test_handle_simple_type_return_u8() {
-        let res = handle_simple_type("u8");
-        assert_eq!(res.is_some(), true);
-        let expectation = quote! { serde_meta::TypeInformation::U8Value() };
-        assert_eq!(res.unwrap().to_string(), expectation.to_string());
-    }
 
     #[test]
     fn test_derive_serde_unit_struct() {

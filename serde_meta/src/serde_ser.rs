@@ -293,7 +293,7 @@ impl<'a, 'b, 'c> Serialize for SerializeableEnumVariantType<'b, 'c> {
     {
         match self.enum_variant_type {
             EnumVariantType::UnitVariant() => {
-                (serializer.serialize_unit_variant("EnumVariantType", 0, "UnitVariant"))
+                serializer.serialize_unit_variant("EnumVariantType", 0, "UnitVariant")
             }
             EnumVariantType::TupleVariant(types) => {
                 let mut st =
