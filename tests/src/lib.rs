@@ -2,6 +2,14 @@
 mod tests {
     use serde_meta::*;
     use serde_meta_derive;
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    fn calculate_hash<T: Hash>(t: &T) -> u64 {
+        let mut s = DefaultHasher::new();
+        t.hash(&mut s);
+        s.finish()
+    }
 
     mod test_derive_u32_field {
         use super::*;
@@ -26,6 +34,20 @@ mod tests {
             }
         }
 
+        #[test]
+        fn test_hash() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(calculate_hash(&meta1), calculate_hash(&meta2));
+        }
+
+        #[test]
+        fn test_eq() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(meta1, meta2);
+        }
+
         #[cfg(feature = "serde_ser")]
         #[test]
         fn test_serialization() {
@@ -40,6 +62,20 @@ mod tests {
 
         #[derive(serde_meta_derive::SerdeMeta)]
         struct A {}
+
+        #[test]
+        fn test_hash() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(calculate_hash(&meta1), calculate_hash(&meta2));
+        }
+
+        #[test]
+        fn test_eq() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(meta1, meta2);
+        }
 
         #[test]
         fn test() {
@@ -76,6 +112,25 @@ mod tests {
         #[derive(serde_meta_derive::SerdeMeta)]
         struct A {
             f: B,
+        }
+
+        #[test]
+        fn test_hash() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(calculate_hash(&meta1), calculate_hash(&meta2));
+
+            let meta_b = B::meta();
+            assert_ne!(calculate_hash(&meta1), calculate_hash(&meta_b));
+        }
+
+        #[test]
+        fn test_eq() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(meta1, meta2);
+            let meta_b = B::meta();
+            assert_ne!(&meta1, &meta_b);
         }
 
         #[test]
@@ -123,6 +178,20 @@ mod tests {
             }
         }
 
+        #[test]
+        fn test_hash() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(calculate_hash(&meta1), calculate_hash(&meta2));
+        }
+
+        #[test]
+        fn test_eq() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(meta1, meta2);
+        }
+
         #[cfg(feature = "serde_ser")]
         #[test]
         fn test_serialization() {
@@ -163,6 +232,20 @@ mod tests {
             }
         }
 
+        #[test]
+        fn test_hash() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(calculate_hash(&meta1), calculate_hash(&meta2));
+        }
+
+        #[test]
+        fn test_eq() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(meta1, meta2);
+        }
+
         #[cfg(feature = "serde_ser")]
         #[test]
         fn test_serialization() {
@@ -197,6 +280,20 @@ mod tests {
             } else {
                 panic!("Expected StructValue, but got {:#?}", meta);
             }
+        }
+
+        #[test]
+        fn test_hash() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(calculate_hash(&meta1), calculate_hash(&meta2));
+        }
+
+        #[test]
+        fn test_eq() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(meta1, meta2);
         }
 
         #[cfg(feature = "serde_ser")]
@@ -260,6 +357,20 @@ mod tests {
             } else {
                 panic!("Expected EnumValue but got {:#?}", meta);
             }
+        }
+
+        #[test]
+        fn test_hash() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(calculate_hash(&meta1), calculate_hash(&meta2));
+        }
+
+        #[test]
+        fn test_eq() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(meta1, meta2);
         }
 
         #[cfg(feature = "serde_ser")]

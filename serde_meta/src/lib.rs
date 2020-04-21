@@ -3,11 +3,11 @@
 mod serde_ser;
 
 
-type TypeInformationRef<'a> = fn () -> TypeInformation<'a>;
+type TypeInformationRef<'a> = fn() -> TypeInformation<'a>;
 
 type TIBox<T> = Box<T>;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 /// Field inside a struct
 pub struct Field<'a> {
     name: &'a str,
@@ -28,7 +28,7 @@ impl<'a> Field<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct Fields<'a> {
     fields: Box<[Field<'a>]>,
 }
@@ -44,7 +44,7 @@ impl<'a> Fields<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 /// Possible types contained in a enum.
 ///
 /// If it contains no fields, it will be a `UnitVariant`.
@@ -72,7 +72,7 @@ pub enum EnumVariantType<'a> {
     StructVariant(Fields<'a>),
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 /// Meta Data for an enum variant
 pub struct EnumVariant<'a> {
     name: &'a str,
@@ -95,7 +95,7 @@ impl<'a> EnumVariant<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct NamedTypeInformation<'a, I: Sized> {
     name: &'a str,
     type_info: I,
@@ -117,7 +117,7 @@ impl<'a, I: Sized> NamedTypeInformation<'a, I> {
 
 pub type UnitStructType<'a> = NamedTypeInformation<'a, ()>;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct SeqType<'a> {
     inner_type: TypeInformationRef<'a>,
 }
@@ -132,9 +132,9 @@ impl<'a> SeqType<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct TupleType<'a>{
-    inner_type: TypeInformationRef<'a>
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+pub struct TupleType<'a> {
+    inner_type: TypeInformationRef<'a>,
 }
 
 impl<'a> TupleType<'a> {
@@ -147,8 +147,7 @@ impl<'a> TupleType<'a> {
     }
 }
 
-
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct TupleTypes<'a> {
     inner_types: TIBox<[TupleType<'a>]>,
 }
@@ -164,7 +163,7 @@ impl<'a> TupleTypes<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct EnumType<'a> {
     possible_variants: Box<[EnumVariant<'a>]>,
 }
@@ -179,7 +178,7 @@ impl<'a> EnumType<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 /// All possible kinds of TypeInformation delivered by `meta` function
 /// or contained in the structs returned by it.
 pub enum TypeInformation<'a> {

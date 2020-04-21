@@ -3,7 +3,7 @@ use serde::ser::*;
 use std::cell::RefCell;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
-use std::hash::Hasher;
+use std::hash::{Hash, Hasher};
 
 type Id = usize;
 
@@ -40,9 +40,9 @@ impl<'a, 'b, 'c> Serialize for SerializeableTypeInformation<'b, 'c> {
         S: Serializer,
     {
         let mut hasher = DefaultHasher::new();
-        core::ptr::hash(self.type_info, &mut hasher);
-        let self_mem_pos = hasher.finish();
-        if let Some(id) = self.visited.get(self_mem_pos) {
+        self.type_info.hash(&mut hasher);
+        let self_hash = hasher.finish();
+        if let Some(id) = self.visited.get(self_hash) {
             let mut st = serializer.serialize_struct("TypeInformationRef", 1)?;
             st.serialize_field("id", &id)?;
             st.end()
@@ -105,8 +105,7 @@ impl<'a, 'b, 'c> Serialize for SerializeableTypeInformation<'b, 'c> {
                         1,
                     )?;
                     let ti = (inner_type)();
-                    let serializeable_inner_type =
-                        SerializeableTypeInformation::new(&ti, visited);
+                    let serializeable_inner_type = SerializeableTypeInformation::new(&ti, visited);
                     st.serialize_field("inner_type", &serializeable_inner_type)?;
                     st.end()
                 }
@@ -153,7 +152,7 @@ impl<'a, 'b, 'c> Serialize for SerializeableTypeInformation<'b, 'c> {
                         "TupleStructValue",
                         3,
                     )?;
-                    let id = visited.register(self_mem_pos);
+                    let id = visited.register(self_hash);
                     st.serialize_field("id", &id)?;
                     st.serialize_field("name", named_type_info.name())?;
                     let serializeable_inner_types = SerializeableTypeInformations::new(
@@ -171,7 +170,7 @@ impl<'a, 'b, 'c> Serialize for SerializeableTypeInformation<'b, 'c> {
                         3,
                     )?;
                     let fields = named_type_info.type_info();
-                    let id = visited.register(self_mem_pos);
+                    let id = visited.register(self_hash);
                     st.serialize_field("id", &id)?;
                     st.serialize_field("name", named_type_info.name())?;
                     let serializeable_fields = SerializeableFields::new(fields.fields(), visited);
@@ -185,7 +184,7 @@ impl<'a, 'b, 'c> Serialize for SerializeableTypeInformation<'b, 'c> {
                         "EnumValue",
                         3,
                     )?;
-                    let id = visited.register(self_mem_pos);
+                    let id = visited.register(self_hash);
                     st.serialize_field("id", &id)?;
                     st.serialize_field("name", named_type_info.name())?;
                     let possible_variants = named_type_info.type_info().possible_variants();
@@ -388,8 +387,10 @@ mod tests {
 
     #[test]
     fn simple_struct_serialize_test() {
-        let to =
-            TypeInformation::StructValue(NamedTypeInformation::new("TestObject", Fields::new(Box::new([]))));
+        let to = TypeInformation::StructValue(NamedTypeInformation::new(
+            "TestObject",
+            Fields::new(Box::new([])),
+        ));
         let res = serde_json::to_string(&to).unwrap();
         assert_eq!(
             "{\"StructValue\":{\"id\":0,\"name\":\"TestObject\",\"fields\":[]}}",
@@ -408,8 +409,8 @@ mod tests {
                 name: "a",
                 inner_type: get_test_struct,
             }]));
-
-            static ref LOOPED_TEST_STRUCT: TypeInformation<'static> = TypeInformation::StructValue(NamedTypeInformation::new(&"A", FIELDS.clone()));
+            static ref LOOPED_TEST_STRUCT: TypeInformation<'static> =
+                TypeInformation::StructValue(NamedTypeInformation::new(&"A", FIELDS.clone()));
         }
 
         #[test]
