@@ -2,9 +2,12 @@
 #[cfg(feature = "serde_ser")]
 mod serde_ser;
 
-type TypeInformationRef<'a> = &'a TypeInformation<'a>;
 
-#[derive(Debug, PartialEq, Eq)]
+type TypeInformationRef<'a> = fn () -> TypeInformation<'a>;
+
+type TIBox<T> = Box<T>;
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 /// Field inside a struct
 pub struct Field<'a> {
     name: &'a str,
@@ -12,7 +15,7 @@ pub struct Field<'a> {
 }
 
 impl<'a> Field<'a> {
-    pub const fn new(name: &'a str, inner_type: TypeInformationRef<'a>) -> Self {
+    pub fn new(name: &'a str, inner_type: TypeInformationRef<'a>) -> Self {
         Self { name, inner_type }
     }
 
@@ -20,34 +23,28 @@ impl<'a> Field<'a> {
         self.name
     }
 
-    pub fn inner_type(&'a self) -> TypeInformationRef<'a> {
-        self.inner_type
+    pub fn inner_type(&'a self) -> TypeInformation<'a> {
+        (self.inner_type)()
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Fields<'a> {
-    fields: &'a [Field<'a>],
+    fields: Box<[Field<'a>]>,
 }
 
 impl<'a> Fields<'a> {
-    pub const fn new(fields: &'a [Field<'a>]) -> Self {
+    pub const fn new(fields: Box<[Field<'a>]>) -> Self {
         //TODO: maybe check for duplicate names?
         Self { fields }
     }
 
     pub fn fields(&'a self) -> &'a [Field<'a>] {
-        self.fields
+        self.fields.as_ref()
     }
 }
 
-impl<'a> From<&'a [Field<'a>]> for Fields<'a> {
-    fn from(a: &'a [Field<'a>]) -> Self {
-        Self::new(a)
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 /// Possible types contained in a enum.
 ///
 /// If it contains no fields, it will be a `UnitVariant`.
@@ -75,7 +72,7 @@ pub enum EnumVariantType<'a> {
     StructVariant(Fields<'a>),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 /// Meta Data for an enum variant
 pub struct EnumVariant<'a> {
     name: &'a str,
@@ -98,7 +95,7 @@ impl<'a> EnumVariant<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct NamedTypeInformation<'a, I: Sized> {
     name: &'a str,
     type_info: I,
@@ -120,52 +117,69 @@ impl<'a, I: Sized> NamedTypeInformation<'a, I> {
 
 pub type UnitStructType<'a> = NamedTypeInformation<'a, ()>;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SeqType<'a> {
     inner_type: TypeInformationRef<'a>,
 }
 
 impl<'a> SeqType<'a> {
-    pub const fn new(inner_type: TypeInformationRef<'a>) -> Self {
+    pub fn new(inner_type: TypeInformationRef<'a>) -> Self {
         Self { inner_type }
     }
 
-    pub fn inner_type(&'a self) -> TypeInformationRef<'a> {
-        self.inner_type
+    pub fn inner_type(&'a self) -> TypeInformation<'a> {
+        (self.inner_type)()
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct TupleType<'a>{
+    inner_type: TypeInformationRef<'a>
+}
+
+impl<'a> TupleType<'a> {
+    pub fn new(inner_type: TypeInformationRef<'a>) -> Self {
+        Self { inner_type }
+    }
+
+    pub fn inner_type(&self) -> TypeInformation {
+        (self.inner_type)()
+    }
+}
+
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TupleTypes<'a> {
-    inner_types: &'a [TypeInformationRef<'a>],
+    inner_types: TIBox<[TupleType<'a>]>,
 }
 
 impl<'a> TupleTypes<'a> {
-    pub const fn new(inner_types: &'a [TypeInformationRef<'a>]) -> Self {
+    pub fn new(inner_types: TIBox<[TupleType<'a>]>) -> Self {
         Self { inner_types }
     }
 
-    pub fn inner_types(&'a self) -> &'a [TypeInformationRef<'a>] {
-        self.inner_types
+    //TODO: Decide on return type...
+    pub fn inner_types(&'a self) -> &'a [TupleType<'a>] {
+        self.inner_types.as_ref()
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct EnumType<'a> {
-    possible_variants: &'a [EnumVariant<'a>],
+    possible_variants: Box<[EnumVariant<'a>]>,
 }
 
 impl<'a> EnumType<'a> {
-    pub const fn new(possible_variants: &'a [EnumVariant<'a>]) -> Self {
+    pub const fn new(possible_variants: Box<[EnumVariant<'a>]>) -> Self {
         Self { possible_variants }
     }
 
     pub fn possible_variants(&'a self) -> &'a [EnumVariant<'a>] {
-        self.possible_variants
+        self.possible_variants.as_ref()
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 /// All possible kinds of TypeInformation delivered by `meta` function
 /// or contained in the structs returned by it.
 pub enum TypeInformation<'a> {

@@ -20,7 +20,7 @@ mod tests {
                 let fields = named_type_info.type_info().fields();
                 assert_eq!(1, fields.len());
                 assert_eq!("f", fields[0].name());
-                assert_eq!(&TypeInformation::U32Value(), fields[0].inner_type());
+                assert_eq!(TypeInformation::U32Value(), fields[0].inner_type());
             } else {
                 panic!("Expected StructValue, but got {:#?}", meta);
             }
@@ -115,9 +115,9 @@ mod tests {
                 assert_eq!("A", named_type_info.name());
                 let inner_types = named_type_info.type_info().inner_types();
                 assert_eq!(3, inner_types.len());
-                assert_eq!(&TypeInformation::U8Value(), inner_types[0]);
-                assert_eq!(&TypeInformation::U16Value(), inner_types[1]);
-                assert_eq!(&TypeInformation::U32Value(), inner_types[2]);
+                assert_eq!(TypeInformation::U8Value(), inner_types[0].inner_type());
+                assert_eq!(TypeInformation::U16Value(), inner_types[1].inner_type());
+                assert_eq!(TypeInformation::U32Value(), inner_types[2].inner_type());
             } else {
                 panic!("Expected TupleStructValue, but got {:#?}", meta);
             }
@@ -152,8 +152,8 @@ mod tests {
                 if let TypeInformation::TupleValue(tuple_types) = fields[0].inner_type() {
                     let inner_types = tuple_types.inner_types();
                     assert_eq!(3, inner_types.len());
-                    for &t in inner_types.iter() {
-                        assert_eq!(&TypeInformation::U8Value(), t);
+                    for t in inner_types.iter() {
+                        assert_eq!(TypeInformation::U8Value(), t.inner_type());
                     }
                 } else {
                     panic!("Expected TupleValue, but got {:#?}", fields[0].inner_type());
@@ -190,7 +190,7 @@ mod tests {
                 assert_eq!(1, fields.len());
                 assert_eq!("f", fields[0].name());
                 if let TypeInformation::SeqValue(seq_type) = fields[0].inner_type() {
-                    assert_eq!(&TypeInformation::U16Value(), seq_type.inner_type());
+                    assert_eq!(TypeInformation::U16Value(), seq_type.inner_type());
                 } else {
                     panic!("Expected SeqValue, but got {:#?}", fields[0].inner_type());
                 }
@@ -231,7 +231,7 @@ mod tests {
                 if let EnumVariantType::TupleVariant(types) = possible_variants[0].inner_type() {
                     let x = types.inner_types();
                     assert_eq!(1, x.len());
-                    assert_eq!(&TypeInformation::I32Value(), x[0]);
+                    assert_eq!(TypeInformation::I32Value(), x[0].inner_type());
                 } else {
                     panic!(
                         "Expected TupleVariant, but found {:#?}",
@@ -243,7 +243,7 @@ mod tests {
                 if let EnumVariantType::StructVariant(fields) = possible_variants[1].inner_type() {
                     let x = fields.fields();
                     assert_eq!(1, x.len());
-                    assert_eq!(&TypeInformation::BoolValue(), x[0].inner_type());
+                    assert_eq!(TypeInformation::BoolValue(), x[0].inner_type());
                     assert_eq!("field", x[0].name());
                 } else {
                     panic!(
