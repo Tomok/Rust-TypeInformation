@@ -2,6 +2,8 @@
 #[cfg(feature = "serde_ser")]
 mod serde_ser;
 
+mod implementations;
+pub use implementations::*;
 
 type TypeInformationRef<'a> = fn() -> TypeInformation<'a>;
 
