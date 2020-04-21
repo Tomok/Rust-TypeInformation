@@ -2,6 +2,14 @@
 mod tests {
     use serde_meta::*;
     use serde_meta_derive;
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    fn calculate_hash<T: Hash>(t: &T) -> u64 {
+        let mut s = DefaultHasher::new();
+        t.hash(&mut s);
+        s.finish()
+    }
 
     mod test_derive_u32_field {
         use super::*;
@@ -20,10 +28,24 @@ mod tests {
                 let fields = named_type_info.type_info().fields();
                 assert_eq!(1, fields.len());
                 assert_eq!("f", fields[0].name());
-                assert_eq!(&TypeInformation::U32Value(), fields[0].inner_type());
+                assert_eq!(TypeInformation::U32Value(), fields[0].inner_type());
             } else {
                 panic!("Expected StructValue, but got {:#?}", meta);
             }
+        }
+
+        #[test]
+        fn test_hash() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(calculate_hash(&meta1), calculate_hash(&meta2));
+        }
+
+        #[test]
+        fn test_eq() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(meta1, meta2);
         }
 
         #[cfg(feature = "serde_ser")]
@@ -40,6 +62,20 @@ mod tests {
 
         #[derive(serde_meta_derive::SerdeMeta)]
         struct A {}
+
+        #[test]
+        fn test_hash() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(calculate_hash(&meta1), calculate_hash(&meta2));
+        }
+
+        #[test]
+        fn test_eq() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(meta1, meta2);
+        }
 
         #[test]
         fn test() {
@@ -79,6 +115,25 @@ mod tests {
         }
 
         #[test]
+        fn test_hash() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(calculate_hash(&meta1), calculate_hash(&meta2));
+
+            let meta_b = B::meta();
+            assert_ne!(calculate_hash(&meta1), calculate_hash(&meta_b));
+        }
+
+        #[test]
+        fn test_eq() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(meta1, meta2);
+            let meta_b = B::meta();
+            assert_ne!(&meta1, &meta_b);
+        }
+
+        #[test]
         fn test() {
             let meta = A::meta();
             if let TypeInformation::StructValue(named_type_info) = meta {
@@ -115,12 +170,26 @@ mod tests {
                 assert_eq!("A", named_type_info.name());
                 let inner_types = named_type_info.type_info().inner_types();
                 assert_eq!(3, inner_types.len());
-                assert_eq!(&TypeInformation::U8Value(), inner_types[0]);
-                assert_eq!(&TypeInformation::U16Value(), inner_types[1]);
-                assert_eq!(&TypeInformation::U32Value(), inner_types[2]);
+                assert_eq!(TypeInformation::U8Value(), inner_types[0].inner_type());
+                assert_eq!(TypeInformation::U16Value(), inner_types[1].inner_type());
+                assert_eq!(TypeInformation::U32Value(), inner_types[2].inner_type());
             } else {
                 panic!("Expected TupleStructValue, but got {:#?}", meta);
             }
+        }
+
+        #[test]
+        fn test_hash() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(calculate_hash(&meta1), calculate_hash(&meta2));
+        }
+
+        #[test]
+        fn test_eq() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(meta1, meta2);
         }
 
         #[cfg(feature = "serde_ser")]
@@ -152,8 +221,8 @@ mod tests {
                 if let TypeInformation::TupleValue(tuple_types) = fields[0].inner_type() {
                     let inner_types = tuple_types.inner_types();
                     assert_eq!(3, inner_types.len());
-                    for &t in inner_types.iter() {
-                        assert_eq!(&TypeInformation::U8Value(), t);
+                    for t in inner_types.iter() {
+                        assert_eq!(TypeInformation::U8Value(), t.inner_type());
                     }
                 } else {
                     panic!("Expected TupleValue, but got {:#?}", fields[0].inner_type());
@@ -161,6 +230,20 @@ mod tests {
             } else {
                 panic!("Expected StructValue, but got {:#?}", meta);
             }
+        }
+
+        #[test]
+        fn test_hash() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(calculate_hash(&meta1), calculate_hash(&meta2));
+        }
+
+        #[test]
+        fn test_eq() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(meta1, meta2);
         }
 
         #[cfg(feature = "serde_ser")]
@@ -190,13 +273,27 @@ mod tests {
                 assert_eq!(1, fields.len());
                 assert_eq!("f", fields[0].name());
                 if let TypeInformation::SeqValue(seq_type) = fields[0].inner_type() {
-                    assert_eq!(&TypeInformation::U16Value(), seq_type.inner_type());
+                    assert_eq!(TypeInformation::U16Value(), seq_type.inner_type());
                 } else {
                     panic!("Expected SeqValue, but got {:#?}", fields[0].inner_type());
                 }
             } else {
                 panic!("Expected StructValue, but got {:#?}", meta);
             }
+        }
+
+        #[test]
+        fn test_hash() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(calculate_hash(&meta1), calculate_hash(&meta2));
+        }
+
+        #[test]
+        fn test_eq() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(meta1, meta2);
         }
 
         #[cfg(feature = "serde_ser")]
@@ -231,7 +328,7 @@ mod tests {
                 if let EnumVariantType::TupleVariant(types) = possible_variants[0].inner_type() {
                     let x = types.inner_types();
                     assert_eq!(1, x.len());
-                    assert_eq!(&TypeInformation::I32Value(), x[0]);
+                    assert_eq!(TypeInformation::I32Value(), x[0].inner_type());
                 } else {
                     panic!(
                         "Expected TupleVariant, but found {:#?}",
@@ -243,7 +340,7 @@ mod tests {
                 if let EnumVariantType::StructVariant(fields) = possible_variants[1].inner_type() {
                     let x = fields.fields();
                     assert_eq!(1, x.len());
-                    assert_eq!(&TypeInformation::BoolValue(), x[0].inner_type());
+                    assert_eq!(TypeInformation::BoolValue(), x[0].inner_type());
                     assert_eq!("field", x[0].name());
                 } else {
                     panic!(
@@ -260,6 +357,20 @@ mod tests {
             } else {
                 panic!("Expected EnumValue but got {:#?}", meta);
             }
+        }
+
+        #[test]
+        fn test_hash() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(calculate_hash(&meta1), calculate_hash(&meta2));
+        }
+
+        #[test]
+        fn test_eq() {
+            let meta1 = A::meta();
+            let meta2 = A::meta();
+            assert_eq!(meta1, meta2);
         }
 
         #[cfg(feature = "serde_ser")]

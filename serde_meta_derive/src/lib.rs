@@ -15,38 +15,6 @@ pub fn derive_serde_meta(_item: TokenStream) -> TokenStream {
     internal_derive_serde_meta(_item.into()).into()
 }
 
-/// converts the ident of a struct to a String with the name of the
-/// corresponding internal meta-data variable name.
-///
-/// For example "A" will return "_A_META_INFO"
-fn build_static_variable_name_str(ident: &dyn ToString) -> String {
-    // TODO: change parameter type to &syn::Ident?
-    format!("_{}_META_INFO", ident.to_string())
-}
-
-/// converts the ident of a struct to a syn::Ident with the name of the
-/// corresponding internal meta-data variable name.
-fn build_static_variable_name(ident: &syn::Ident) -> syn::Ident {
-    let meta_info_name_str = build_static_variable_name_str(ident);
-    syn::Ident::new(&meta_info_name_str, ident.span())
-}
-
-/// takes a given `syn::Path` and returns the corresponding
-/// `syn::Path` to the meta object.
-///
-/// Does not check, if a meta object exists for that path!
-fn build_static_variable_path(path: &syn::Path) -> syn::Path {
-    let mut res = path.clone();
-    let item = res.segments.pop().unwrap();
-    let last_value = item.value().ident.clone();
-    let new_value = build_static_variable_name(&last_value);
-    let mut v = item.into_value();
-    v.ident = new_value;
-    res.segments.push(v);
-    assert!(res.segments.last().unwrap().ident == build_static_variable_name(&last_value));
-    res
-}
-
 /// library internal function to automatically generate a `meta()` function for a given struct
 ///
 /// using a separate function with proc_macro2::TokenStreams to implement the
@@ -75,13 +43,10 @@ fn internal_derive_serde_meta(item: proc_macro2::TokenStream) -> proc_macro2::To
             input.data
         ),
     };
-    let meta_info_name_ident = build_static_variable_name(&ident);
     let res = quote! {
-        pub static #meta_info_name_ident: TypeInformation<'static> = #gen;
-
         impl #lifet SerdeMeta for #ident #lifet {
-            fn meta() -> &'static serde_meta::TypeInformation<'static> {
-                &#meta_info_name_ident
+            fn meta() -> serde_meta::TypeInformation<'static> {
+                #gen
             }
         }
     };
@@ -107,7 +72,7 @@ fn derive_enum_variants(
     let variants_iter = variants.iter().map(|v| derive_enum_variant(v));
 
     quote! {
-        &[#(#variants_iter),*]
+        Box::new([#(#variants_iter),*])
     }
 }
 
@@ -153,7 +118,9 @@ fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> proc_macro
         syn::Fields::Named(f) => {
             let fields = derive_fields_named(f);
             let res = quote! {
-                serde_meta::TypeInformation::StructValue(NamedTypeInformation::new( #strident, #fields))
+                serde_meta::TypeInformation::StructValue(
+                    serde_meta::NamedTypeInformation::new( #strident, #fields)
+                )
             };
             res
         }
@@ -183,7 +150,7 @@ fn derive_fields_named(fields: &syn::FieldsNamed) -> proc_macro2::TokenStream {
     let fields_iter = fields.named.iter().map(|f| derive_named_field(f));
 
     quote! {
-        serde_meta::Fields::new(&[#(#fields_iter),*])
+        serde_meta::Fields::new(Box::new([#(#fields_iter),*]))
     }
 }
 
@@ -192,38 +159,13 @@ fn derive_fields_named(fields: &syn::FieldsNamed) -> proc_macro2::TokenStream {
 /// the corresponding meta data, i.e. a reference to an array of references
 /// to the corresponding meta data type objects
 fn derive_fields_unnamed(fields: &syn::FieldsUnnamed) -> proc_macro2::TokenStream {
-    let fields_iter = fields.unnamed.iter().map(|f| type_to_meta(&f.ty));
+    let fields_iter = fields
+        .unnamed
+        .iter()
+        .map(|f| derive_unnamed_tuple_element(&f.ty));
 
     quote! {
-        &[#(&#fields_iter),*]
-    }
-}
-
-/// Tries to convert a type_name to tokens generating a corresponding
-/// `TypeInformation` object.
-/// Returns `None` if the conversion was not possible.
-fn handle_simple_type(type_name: &str) -> Option<proc_macro2::TokenStream> {
-    match type_name {
-        "bool" => Some(quote! { serde_meta::TypeInformation::BoolValue() }),
-        "i8" => Some(quote! { serde_meta::TypeInformation::I8Value() }),
-        "i16" => Some(quote! { serde_meta::TypeInformation::I16Value() }),
-        "i32" => Some(quote! { serde_meta::TypeInformation::I32Value() }),
-        "i64" => Some(quote! { serde_meta::TypeInformation::I64Value() }),
-        "i128" => Some(quote! { serde_meta::TypeInformation::I128Value() }),
-
-        "u8" => Some(quote! { serde_meta::TypeInformation::U8Value() }),
-        "u16" => Some(quote! { serde_meta::TypeInformation::U16Value() }),
-        "u32" => Some(quote! { serde_meta::TypeInformation::U32Value() }),
-        "u64" => Some(quote! { serde_meta::TypeInformation::U64Value() }),
-        "u128" => Some(quote! { serde_meta::TypeInformation::U128Value() }),
-
-        "f32" => Some(quote! { serde_meta::TypeInformation::F32Value() }),
-        "f64" => Some(quote! { serde_meta::TypeInformation::F64Value() }),
-
-        "char" => Some(quote! { serde_meta::TypeInformation::CharValue() }),
-
-        "str" => Some(quote! { serde_meta::TypeInformation::StringValue() }),
-        _ => None,
+        Box::new([#(#fields_iter),*])
     }
 }
 
@@ -234,15 +176,7 @@ fn handle_simple_type(type_name: &str) -> Option<proc_macro2::TokenStream> {
 ///
 /// Does not check, if a meta object exists for that path!
 fn path_to_meta(path: &syn::Path) -> proc_macro2::TokenStream {
-    if path.segments.len() == 1 {
-        //could be a basic type
-        let simple_type_res = handle_simple_type(&path.segments.first().unwrap().ident.to_string());
-        if let Some(res) = simple_type_res {
-            return res;
-        }
-    }
-    let path_name = build_static_variable_path(&path);
-    let res = quote! { #path_name };
+    let res = quote! { #path::meta() };
     res
 }
 
@@ -257,10 +191,13 @@ fn array_to_meta(a: &syn::TypeArray) -> proc_macro2::TokenStream {
     {
         let size = lit.base10_parse().expect("Could not parse array size");
         let t = type_to_meta(&*a.elem);
-        let fields_iter = std::iter::repeat(t).take(size);
-        quote! {
-            serde_meta::TypeInformation::TupleValue(serde_meta::TupleTypes::new( &[#(&#fields_iter),*] ))
-        }
+        let tt = quote! { serde_meta::TupleType::new( || #t ) };
+        let fields_iter = std::iter::repeat(tt).take(size);
+        let repeated = quote! { Box::new([#(#fields_iter),*]) };
+        let res = quote! {
+            serde_meta::TypeInformation::TupleValue(serde_meta::TupleTypes::new( #repeated ))
+        };
+        res
     } else {
         panic!(
             "Only integer literals are supported as array length right now, but found a {:#?}",
@@ -279,7 +216,7 @@ fn type_to_meta(ty: &syn::Type) -> proc_macro2::TokenStream {
         syn::Type::Slice(syn::TypeSlice { elem: t, .. }) => {
             let inner = type_to_meta(&*t);
             quote! {
-                serde_meta::TypeInformation::SeqValue(serde_meta::SeqType::new( &#inner ))
+                serde_meta::TypeInformation::SeqValue(serde_meta::SeqType::new( || #inner ))
             }
         }
         _ => panic!("type_to_meta: Not implemented for {:#?}", ty),
@@ -292,9 +229,20 @@ fn derive_named_field(field: &syn::Field) -> proc_macro2::TokenStream {
     let ident = format!("{}", x.unwrap());
     let type_info = type_to_meta(&field.ty);
     let map_res = quote! {
-        Field::new(
+        serde_meta::Field::new(
             #ident,
-            &#type_info,
+            || #type_info
+        )
+    };
+    map_res
+}
+
+/// generates a `TokenStream` that creates the meta data for a given tuple element.
+fn derive_unnamed_tuple_element(ty: &syn::Type) -> proc_macro2::TokenStream {
+    let type_info_meta = type_to_meta(ty);
+    let map_res = quote! {
+        serde_meta::TupleType::new(
+            || #type_info_meta
         )
     };
     map_res
@@ -305,35 +253,16 @@ mod test {
     use super::*;
 
     use quote::quote;
-
-    #[test]
-    fn test_build_static_variable_name_str() {
-        assert_eq!("_A_META_INFO", build_static_variable_name_str(&"A"));
-    }
-
-    #[test]
-    fn test_handle_simple_type_return_none() {
-        assert_eq!(handle_simple_type("NotASimpleType").is_none(), true);
-    }
-
-    #[test]
-    fn test_handle_simple_type_return_u8() {
-        let res = handle_simple_type("u8");
-        assert_eq!(res.is_some(), true);
-        let expectation = quote! { serde_meta::TypeInformation::U8Value() };
-        assert_eq!(res.unwrap().to_string(), expectation.to_string());
-    }
+    use syn::parse_quote;
 
     #[test]
     fn test_derive_serde_unit_struct() {
         let input = quote! { struct A; };
         let res = internal_derive_serde_meta(input);
         let expectation = quote! {
-            pub static _A_META_INFO: TypeInformation<'static> = serde_meta::TypeInformation::UnitStructValue( serde_meta::UnitStructType::new( "A", () ) );
-
             impl SerdeMeta for A {
-                fn meta() -> &'static serde_meta::TypeInformation<'static> {
-                    & _A_META_INFO
+                fn meta() -> serde_meta::TypeInformation<'static> {
+                    serde_meta::TypeInformation::UnitStructValue( serde_meta::UnitStructType::new( "A", () ) )
                 }
             }
         };
@@ -345,14 +274,113 @@ mod test {
         let input = quote! { struct A {} };
         let res = internal_derive_serde_meta(input);
         let expectation = quote! {
-            pub static _A_META_INFO: TypeInformation<'static> = serde_meta::TypeInformation::StructValue(
-                NamedTypeInformation::new("A",
-                serde_meta::Fields::new(&[]))
-            );
-
             impl SerdeMeta for A {
-                fn meta() -> &'static serde_meta::TypeInformation<'static> {
-                    & _A_META_INFO
+                fn meta() -> serde_meta::TypeInformation<'static> {
+                    serde_meta::TypeInformation::StructValue(
+                        serde_meta::NamedTypeInformation::new("A",
+                            serde_meta::Fields::new(Box::new([]))
+                        )
+                    )
+                }
+            }
+        };
+        assert_eq!(res.to_string(), expectation.to_string());
+    }
+
+    #[test]
+    fn test_derive_tuple_struct() {
+        let input = quote! {struct A(u8, u16, u32); };
+        let res = internal_derive_serde_meta(input);
+        let expectation = quote! {
+            impl SerdeMeta for A {
+                fn meta() -> serde_meta::TypeInformation<'static> {
+                    serde_meta::TypeInformation::TupleStructValue(
+                        serde_meta::NamedTypeInformation::new("A", serde_meta::TupleTypes::new(Box::new([
+                            serde_meta::TupleType::new( || u8::meta() ),
+                            serde_meta::TupleType::new( || u16::meta() ),
+                            serde_meta::TupleType::new( || u32::meta() )
+                        ])))
+                    )
+                }
+            }
+        };
+        assert_eq!(res.to_string(), expectation.to_string());
+    }
+
+    #[test]
+    fn test_type_to_meta_slice() {
+        let input = parse_quote! {[u8]};
+        let expectation = quote! {
+            serde_meta::TypeInformation::SeqValue(serde_meta::SeqType::new( || u8::meta() ))
+        };
+
+        let res = type_to_meta(&input);
+
+        assert_eq!(res.to_string(), expectation.to_string());
+    }
+
+    #[test]
+    fn test_array_to_meta() {
+        // as parse is not implemented for TypeArray, parse an ExprType and get the TypeArray from there
+        let typedef: syn::ExprType = parse_quote! { a: [u8; 2]};
+        let input = match *typedef.ty {
+            syn::Type::Array(a) => a,
+            _ => panic!("typedef was messed up and did not return an Array as type..."),
+        };
+
+        let expectation = quote! {
+            serde_meta::TypeInformation::TupleValue(
+                serde_meta::TupleTypes::new(Box::new([
+                    serde_meta::TupleType::new( || u8::meta() ),
+                    serde_meta::TupleType::new( || u8::meta() )
+                ]))
+            )
+        };
+
+        let res = array_to_meta(&input);
+
+        assert_eq!(res.to_string(), expectation.to_string());
+    }
+
+    #[test]
+    fn test_derive_array_struct() {
+        let input = quote! { struct A {f: [u8; 3]} };
+        let res = internal_derive_serde_meta(input);
+        let expected_fields = quote! {
+            serde_meta::Fields::new(Box::new([serde_meta::Field::new("f",
+                || serde_meta::TypeInformation::TupleValue(
+                    serde_meta::TupleTypes::new(Box::new([
+                        serde_meta::TupleType::new( || u8::meta() ),
+                        serde_meta::TupleType::new( || u8::meta() ),
+                        serde_meta::TupleType::new( || u8::meta() )
+                    ]))
+                )
+            )]))
+        };
+        let expectation = quote! {
+            impl SerdeMeta for A {
+                fn meta() -> serde_meta::TypeInformation<'static> {
+                    serde_meta::TypeInformation::StructValue(
+                        serde_meta::NamedTypeInformation::new("A", #expected_fields)
+                    )
+                }
+            }
+        };
+        assert_eq!(res.to_string(), expectation.to_string());
+    }
+
+    #[test]
+    fn test_derive_self_referencing_struct() {
+        let input = quote! { struct A { f: &A } };
+        let res = internal_derive_serde_meta(input);
+        let expectation = quote! {
+            impl SerdeMeta for A {
+                fn meta() -> serde_meta::TypeInformation<'static> {
+                    serde_meta::TypeInformation::StructValue(
+                        serde_meta::NamedTypeInformation::new("A",
+                            serde_meta::Fields::new(Box::new([ serde_meta::Field::new("f", || A::meta()) ]))
+                        )
+                    )
                 }
             }
         };

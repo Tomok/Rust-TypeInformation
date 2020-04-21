@@ -2,15 +2,22 @@
 #[cfg(feature = "serde_ser")]
 mod serde_ser;
 
-#[derive(Debug, PartialEq, Eq)]
+mod implementations;
+pub use implementations::*;
+
+type TypeInformationRef<'a> = fn() -> TypeInformation<'a>;
+
+type TIBox<T> = Box<T>;
+
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 /// Field inside a struct
 pub struct Field<'a> {
     name: &'a str,
-    inner_type: &'a TypeInformation<'a>,
+    inner_type: TypeInformationRef<'a>,
 }
 
 impl<'a> Field<'a> {
-    pub const fn new(name: &'a str, inner_type: &'a TypeInformation<'a>) -> Self {
+    pub fn new(name: &'a str, inner_type: TypeInformationRef<'a>) -> Self {
         Self { name, inner_type }
     }
 
@@ -18,34 +25,28 @@ impl<'a> Field<'a> {
         self.name
     }
 
-    pub fn inner_type(&'a self) -> &'a TypeInformation<'a> {
-        self.inner_type
+    pub fn inner_type(&'a self) -> TypeInformation<'a> {
+        (self.inner_type)()
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct Fields<'a> {
-    fields: &'a [Field<'a>],
+    fields: Box<[Field<'a>]>,
 }
 
 impl<'a> Fields<'a> {
-    pub const fn new(fields: &'a [Field<'a>]) -> Self {
+    pub const fn new(fields: Box<[Field<'a>]>) -> Self {
         //TODO: maybe check for duplicate names?
         Self { fields }
     }
 
     pub fn fields(&'a self) -> &'a [Field<'a>] {
-        self.fields
+        self.fields.as_ref()
     }
 }
 
-impl<'a> From<&'a [Field<'a>]> for Fields<'a> {
-    fn from(a: &'a [Field<'a>]) -> Self {
-        Self::new(a)
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 /// Possible types contained in a enum.
 ///
 /// If it contains no fields, it will be a `UnitVariant`.
@@ -73,7 +74,7 @@ pub enum EnumVariantType<'a> {
     StructVariant(Fields<'a>),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 /// Meta Data for an enum variant
 pub struct EnumVariant<'a> {
     name: &'a str,
@@ -96,7 +97,7 @@ impl<'a> EnumVariant<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct NamedTypeInformation<'a, I: Sized> {
     name: &'a str,
     type_info: I,
@@ -118,52 +119,68 @@ impl<'a, I: Sized> NamedTypeInformation<'a, I> {
 
 pub type UnitStructType<'a> = NamedTypeInformation<'a, ()>;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct SeqType<'a> {
-    inner_type: &'a TypeInformation<'a>,
+    inner_type: TypeInformationRef<'a>,
 }
 
 impl<'a> SeqType<'a> {
-    pub const fn new(inner_type: &'a TypeInformation<'a>) -> Self {
+    pub fn new(inner_type: TypeInformationRef<'a>) -> Self {
         Self { inner_type }
     }
 
-    pub fn inner_type(&'a self) -> &'a TypeInformation<'a> {
-        self.inner_type
+    pub fn inner_type(&'a self) -> TypeInformation<'a> {
+        (self.inner_type)()
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+pub struct TupleType<'a> {
+    inner_type: TypeInformationRef<'a>,
+}
+
+impl<'a> TupleType<'a> {
+    pub fn new(inner_type: TypeInformationRef<'a>) -> Self {
+        Self { inner_type }
+    }
+
+    pub fn inner_type(&self) -> TypeInformation {
+        (self.inner_type)()
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct TupleTypes<'a> {
-    inner_types: &'a [&'a TypeInformation<'a>],
+    inner_types: TIBox<[TupleType<'a>]>,
 }
 
 impl<'a> TupleTypes<'a> {
-    pub const fn new(inner_types: &'a [&'a TypeInformation<'a>]) -> Self {
+    pub fn new(inner_types: TIBox<[TupleType<'a>]>) -> Self {
         Self { inner_types }
     }
 
-    pub fn inner_types(&'a self) -> &'a [&'a TypeInformation<'a>] {
-        self.inner_types
+    //TODO: Decide on return type...
+    pub fn inner_types(&'a self) -> &'a [TupleType<'a>] {
+        self.inner_types.as_ref()
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct EnumType<'a> {
-    possible_variants: &'a [EnumVariant<'a>],
+    possible_variants: Box<[EnumVariant<'a>]>,
 }
 
 impl<'a> EnumType<'a> {
-    pub const fn new(possible_variants: &'a [EnumVariant<'a>]) -> Self {
+    pub const fn new(possible_variants: Box<[EnumVariant<'a>]>) -> Self {
         Self { possible_variants }
     }
 
     pub fn possible_variants(&'a self) -> &'a [EnumVariant<'a>] {
-        self.possible_variants
+        self.possible_variants.as_ref()
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 /// All possible kinds of TypeInformation delivered by `meta` function
 /// or contained in the structs returned by it.
 pub enum TypeInformation<'a> {
@@ -207,7 +224,7 @@ pub enum TypeInformation<'a> {
 
     // TODO should this remain, or is it just there because serde has it?
     OptionValue {
-        inner_type: &'a TypeInformation<'a>,
+        inner_type: TypeInformationRef<'a>,
     },
 
     // TODO: Unused -> Remove??
@@ -261,37 +278,96 @@ pub enum TypeInformation<'a> {
 /// `meta` function to your class providing meta data about it.
 pub trait SerdeMeta {
     /// Provide Meta Data for this struct.
-    fn meta() -> &'static TypeInformation<'static>;
+    fn meta() -> TypeInformation<'static>;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lazy_static::lazy_static;
     use TypeInformation::*;
 
     mod test_structs_can_reference_themselves {
         use super::*;
 
-        use std::ptr;
+        fn get_test_struct() -> TypeInformation<'static> {
+            LOOPED_TEST_STRUCT.clone()
+        }
 
-        static FIELDS: Fields = Fields::new(&[Field {
-            name: "a",
-            inner_type: &TEST_STRUCT,
-        }]);
-        static TEST_STRUCT: TypeInformation = StructValue(NamedTypeInformation::new(&"A", FIELDS));
+        lazy_static! {
+            static ref FIELDS: Fields<'static> = Fields::new(Box::new([Field {
+                name: "a",
+                inner_type: get_test_struct,
+            }]));
+            static ref LOOPED_TEST_STRUCT: TypeInformation<'static> =
+                TypeInformation::StructValue(NamedTypeInformation::new(&"A", FIELDS.clone()));
+        }
 
         #[test]
         fn test_structs_can_reference_themselves() {
             if let StructValue(NamedTypeInformation {
                 name: _,
                 type_info: fields,
-            }) = TEST_STRUCT
+            }) = get_test_struct()
             {
-                //make sure it is the same instance
-                assert!(ptr::eq(&TEST_STRUCT, fields.fields()[0].inner_type()));
+                let test_struct = get_test_struct();
+                //make sure test_struct and the one in the field of the let statement above are equal
+                assert_eq!(&test_struct, &fields.fields()[0].inner_type());
             } else {
                 panic!("TEST_STRUCT did not contain a TEST_STRUCT as field");
             }
+        }
+    }
+
+    /// tests that two structs with identical structure, but not identical themselves are
+    /// not determined to be equal
+    mod structs_with_identical_structure {
+        use super::*;
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        fn get_test_struct() -> TypeInformation<'static> {
+            LOOPED_TEST_STRUCT.clone()
+        }
+
+        lazy_static! {
+            static ref FIELDS: Fields<'static> = Fields::new(Box::new([Field {
+                name: "a",
+                inner_type: get_test_struct,
+            }]));
+            static ref LOOPED_TEST_STRUCT: TypeInformation<'static> =
+                TypeInformation::StructValue(NamedTypeInformation::new(&"A", FIELDS.clone()));
+        }
+
+        fn get_test_struct2() -> TypeInformation<'static> {
+            LOOPED_TEST_STRUCT2.clone()
+        }
+
+        lazy_static! {
+            static ref FIELDS2: Fields<'static> = Fields::new(Box::new([Field {
+                name: "a",
+                inner_type: get_test_struct2,
+            }]));
+            static ref LOOPED_TEST_STRUCT2: TypeInformation<'static> =
+                TypeInformation::StructValue(NamedTypeInformation::new(&"A", FIELDS2.clone()));
+        }
+        #[test]
+        fn test_equal() {
+            assert_ne!(get_test_struct(), get_test_struct2());
+        }
+
+        fn calculate_hash<T: Hash>(t: &T) -> u64 {
+            let mut s = DefaultHasher::new();
+            t.hash(&mut s);
+            s.finish()
+        }
+
+        #[test]
+        fn test_hash() {
+            assert_ne!(
+                calculate_hash(&get_test_struct()),
+                calculate_hash(&get_test_struct2())
+            );
         }
     }
 }
