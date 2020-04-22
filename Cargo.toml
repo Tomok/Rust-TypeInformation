@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "serde_meta",
-    "serde_meta_derive",
+    "type_information",
+    "type_information_derive",
     "tests"
 ]

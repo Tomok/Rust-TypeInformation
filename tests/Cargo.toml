@@ -10,8 +10,8 @@ default = ["serde_ser"]
 serde_ser = []
 
 [dependencies]
-serde-meta = { path = "../serde_meta"}
-serde-meta-derive = { path = "../serde_meta_derive" }
+type-information = { path = "../type_information"}
+type-information-derive = { path = "../type_information_derive" }
 
 [dev-dependencies]
 serde_json = "~1.0"
