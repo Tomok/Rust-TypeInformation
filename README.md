@@ -4,7 +4,7 @@
 ** THIS IS CURRENTLY NOT IN A USABLE STATE **
 
 
-[![Build Status](https://travis-ci.org/Tomok/type-information.svg?branch=master)](https://travis-ci.org/Tomok/type-information)
+[![Build Status](https://travis-ci.org/Tomok/Rust-TypeInformation.svg?branch=master)](https://travis-ci.org/Tomok/Rust-TypeInformation)
 
 This library can be used to extend structures with meta information allowing
 to query them for their fields at runtime.
