@@ -1,11 +1,11 @@
 [package]
-name = "serde-meta-derive"
+name = "type-information-derive"
 version = "0.1.0"
 authors = ["Thomas Lahmer <791550+Tomok@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
-serde-meta = { path = "../serde_meta"}
+type-information = { path = "../type_information"}
 syn = { version = "~1.0", features = ["derive", "parsing", "printing", "visit", "proc-macro", "extra-traits"] }
 quote = "~1.0"
 proc-macro2 = "~1.0"
