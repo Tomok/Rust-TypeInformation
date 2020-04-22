@@ -1,5 +1,5 @@
-# serde-meta
-**serde-meta is a framework to get runtime information about rust types**
+# (Rust-)TypeInformation
+**This is a framework to get runtime information about rust types**
 
 ** THIS IS CURRENTLY NOT IN A USABLE STATE **
 
@@ -15,11 +15,7 @@ The primary idea for this library is to allow the implementation of interfaces,
 that can be queried for the format of data to be send to/received from them.
 The real interfaces can than be implemented with serde or a similar framework.
 
-## Relationship to Serde
-In general this library can be used independend of serde.
-However it borrows the serde data model to allow easy compatibility.
-
-#### License
+### License
 
 <sup>
 Licensed under either of <a href="LICENSE-APACHE">Apache License, Version
