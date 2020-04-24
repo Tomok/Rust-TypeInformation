@@ -274,9 +274,9 @@ pub enum TypeInformation<'a> {
     EnumValue(NamedTypeInformation<'a, EnumType<'a>>),
 }
 
-/// Implement this trait or derive `SerdeMeta` to add a
+/// Implement this trait or derive `Meta` to add a
 /// `meta` function to your class providing meta data about it.
-pub trait SerdeMeta {
+pub trait Meta {
     /// Provide Meta Data for this struct.
     fn meta() -> TypeInformation<'static>;
 }

@@ -15,7 +15,7 @@ mod tests {
         use super::*;
 
         #[allow(unused)] //dummy struct just to check meta information generated for it
-        #[derive(type_information_derive::SerdeMeta)]
+        #[derive(type_information_derive::Meta)]
         struct A {
             f: u32,
         }
@@ -60,7 +60,7 @@ mod tests {
     mod test_derive_empty_struct {
         use super::*;
 
-        #[derive(type_information_derive::SerdeMeta)]
+        #[derive(type_information_derive::Meta)]
         struct A {}
 
         #[test]
@@ -105,11 +105,11 @@ mod tests {
     mod test_derive_single_field_struct {
         use super::*;
 
-        #[derive(type_information_derive::SerdeMeta)]
+        #[derive(type_information_derive::Meta)]
         struct B;
 
         #[allow(unused)] //dummy struct just to check meta information generated for it
-        #[derive(type_information_derive::SerdeMeta)]
+        #[derive(type_information_derive::Meta)]
         struct A {
             f: B,
         }
@@ -160,7 +160,7 @@ mod tests {
         use super::*;
 
         #[allow(unused)]
-        #[derive(type_information_derive::SerdeMeta)]
+        #[derive(type_information_derive::Meta)]
         struct A(u8, u16, u32);
 
         #[test]
@@ -205,7 +205,7 @@ mod tests {
         use super::*;
 
         #[allow(unused)]
-        #[derive(type_information_derive::SerdeMeta)]
+        #[derive(type_information_derive::Meta)]
         struct A {
             f: [u8; 3],
         }
@@ -259,7 +259,7 @@ mod tests {
         use super::*;
 
         #[allow(unused)]
-        #[derive(type_information_derive::SerdeMeta)]
+        #[derive(type_information_derive::Meta)]
         struct A<'a> {
             f: &'a [u16],
         }
@@ -309,7 +309,7 @@ mod tests {
         use super::*;
 
         #[allow(unused)]
-        #[derive(type_information_derive::SerdeMeta)]
+        #[derive(type_information_derive::Meta)]
         enum A {
             IntVal(i32),
             StructVal { field: bool },

@@ -6,7 +6,7 @@ use syn;
 
 extern crate type_information;
 
-#[proc_macro_derive(SerdeMeta)]
+#[proc_macro_derive(Meta)]
 /// automatically generates a `meta()` function for a given struct
 ///
 /// This generates a static variable `_<struct_name>_META_INFO`
@@ -44,7 +44,7 @@ fn internal_derive_type_information(item: proc_macro2::TokenStream) -> proc_macr
         ),
     };
     let res = quote! {
-        impl #lifet SerdeMeta for #ident #lifet {
+        impl #lifet Meta for #ident #lifet {
             fn meta() -> type_information::TypeInformation<'static> {
                 #gen
             }
@@ -260,7 +260,7 @@ mod test {
         let input = quote! { struct A; };
         let res = internal_derive_type_information(input);
         let expectation = quote! {
-            impl SerdeMeta for A {
+            impl Meta for A {
                 fn meta() -> type_information::TypeInformation<'static> {
                     type_information::TypeInformation::UnitStructValue( type_information::UnitStructType::new( "A", () ) )
                 }
@@ -274,7 +274,7 @@ mod test {
         let input = quote! { struct A {} };
         let res = internal_derive_type_information(input);
         let expectation = quote! {
-            impl SerdeMeta for A {
+            impl Meta for A {
                 fn meta() -> type_information::TypeInformation<'static> {
                     type_information::TypeInformation::StructValue(
                         type_information::NamedTypeInformation::new("A",
@@ -292,7 +292,7 @@ mod test {
         let input = quote! {struct A(u8, u16, u32); };
         let res = internal_derive_type_information(input);
         let expectation = quote! {
-            impl SerdeMeta for A {
+            impl Meta for A {
                 fn meta() -> type_information::TypeInformation<'static> {
                     type_information::TypeInformation::TupleStructValue(
                         type_information::NamedTypeInformation::new("A", type_information::TupleTypes::new(Box::new([
@@ -358,7 +358,7 @@ mod test {
             )]))
         };
         let expectation = quote! {
-            impl SerdeMeta for A {
+            impl Meta for A {
                 fn meta() -> type_information::TypeInformation<'static> {
                     type_information::TypeInformation::StructValue(
                         type_information::NamedTypeInformation::new("A", #expected_fields)
@@ -374,7 +374,7 @@ mod test {
         let input = quote! { struct A { f: &A } };
         let res = internal_derive_type_information(input);
         let expectation = quote! {
-            impl SerdeMeta for A {
+            impl Meta for A {
                 fn meta() -> type_information::TypeInformation<'static> {
                     type_information::TypeInformation::StructValue(
                         type_information::NamedTypeInformation::new("A",
