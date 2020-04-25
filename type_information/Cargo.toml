@@ -1,7 +1,15 @@
 [package]
 name = "type-information"
 version = "0.1.0"
-authors = ["Thomas Lahmer <791550+Tomok@users.noreply.github.com>"]
+authors = ["Thomas Lahmer <tlahmer@darewell.de>"]
+license = "MIT OR Apache-2.0"
+description = "TypeInformation Framework for Rust"
+homepage = "https://github.com/Tomok/Rust-TypeInformation"
+repository = "https://github.com/Tomok/Rust-TypeInformation"
+# documentation = TODO
+keywords = ["type-information", "meta", "meta-data"]
+categories = ["data-structures"]
+readme = "README.md"
 edition = "2018"
 
 [features]

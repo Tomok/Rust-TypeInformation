@@ -1,7 +1,8 @@
 [package]
 name = "tests"
 version = "0.1.0"
-authors = ["Thomas Lahmer <791550+Tomok@users.noreply.github.com>"]
+authors = ["Thomas Lahmer <tlahmer@darewell.de>"]
+publish = false
 edition = "2018"
 
 [features]
