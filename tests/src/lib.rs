@@ -1,9 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use type_information::*;
-    use type_information_derive;
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
+
+    use type_information::*;
+    use type_information_derive;
 
     fn calculate_hash<T: Hash>(t: &T) -> u64 {
         let mut s = DefaultHasher::new();
@@ -53,7 +54,7 @@ mod tests {
         fn test_serialization() {
             let meta = A::meta();
             let res = serde_json::to_string(&meta).unwrap();
-            assert_eq!("{\"StructValue\":{\"id\":0,\"name\":\"A\",\"fields\":[{\"name\":\"f\",\"inner_type\":\"U32Value\"}]}}", res);
+            assert_eq!("{\"0\":{\"StructValue\":{\"name\":\"A\",\"type_info\":{\"fields\":[{\"name\":\"f\",\"inner_type\":1}]}}},\"1\":{\"U32Value\":[]}}", res);
         }
     }
 
@@ -96,7 +97,7 @@ mod tests {
             let meta = A::meta();
             let res = serde_json::to_string(&meta).unwrap();
             assert_eq!(
-                "{\"StructValue\":{\"id\":0,\"name\":\"A\",\"fields\":[]}}",
+                "{\"0\":{\"StructValue\":{\"name\":\"A\",\"type_info\":{\"fields\":[]}}}}",
                 res
             );
         }
@@ -152,7 +153,7 @@ mod tests {
         fn test_serialization() {
             let meta = A::meta();
             let res = serde_json::to_string(&meta).unwrap();
-            assert_eq!("{\"StructValue\":{\"id\":0,\"name\":\"A\",\"fields\":[{\"name\":\"f\",\"inner_type\":{\"UnitStructValue\":{\"name\":\"B\"}}}]}}", res);
+            assert_eq!("{\"0\":{\"StructValue\":{\"name\":\"A\",\"type_info\":{\"fields\":[{\"name\":\"f\",\"inner_type\":1}]}}},\"1\":{\"UnitStructValue\":{\"name\":\"B\",\"type_info\":null}}}", res);
         }
     }
 
@@ -197,7 +198,7 @@ mod tests {
         fn test_serialization() {
             let meta = A::meta();
             let res = serde_json::to_string(&meta).unwrap();
-            assert_eq!("{\"TupleStructValue\":{\"id\":0,\"name\":\"A\",\"inner_types\":[\"U8Value\",\"U16Value\",\"U32Value\"]}}", res);
+            assert_eq!("{\"0\":{\"TupleStructValue\":{\"name\":\"A\",\"type_info\":{\"inner_types\":[{\"inner_type\":1},{\"inner_type\":2},{\"inner_type\":3}]}}},\"1\":{\"U8Value\":[]},\"2\":{\"U16Value\":[]},\"3\":{\"U32Value\":[]}}", res);
         }
     }
 
@@ -251,7 +252,7 @@ mod tests {
         fn test_serialization() {
             let meta = A::meta();
             let res = serde_json::to_string(&meta).unwrap();
-            assert_eq!("{\"StructValue\":{\"id\":0,\"name\":\"A\",\"fields\":[{\"name\":\"f\",\"inner_type\":{\"SeqValue\":{\"inner_types\":[\"U8Value\",\"U8Value\",\"U8Value\"]}}}]}}", res);
+            assert_eq!("{\"0\":{\"StructValue\":{\"name\":\"A\",\"type_info\":{\"fields\":[{\"name\":\"f\",\"inner_type\":1}]}}},\"1\":{\"TupleValue\":{\"inner_types\":[{\"inner_type\":2},{\"inner_type\":2},{\"inner_type\":2}]}},\"2\":{\"U8Value\":[]}}", res);
         }
     }
 
@@ -301,7 +302,7 @@ mod tests {
         fn test_serialization() {
             let meta = A::meta();
             let res = serde_json::to_string(&meta).unwrap();
-            assert_eq!("{\"StructValue\":{\"id\":0,\"name\":\"A\",\"fields\":[{\"name\":\"f\",\"inner_type\":{\"SeqValue\":{\"inner_type\":\"U16Value\"}}}]}}", res);
+            assert_eq!("{\"0\":{\"StructValue\":{\"name\":\"A\",\"type_info\":{\"fields\":[{\"name\":\"f\",\"inner_type\":1}]}}},\"1\":{\"SeqValue\":{\"inner_type\":2}},\"2\":{\"U16Value\":[]}}", res);
         }
     }
 
@@ -378,7 +379,7 @@ mod tests {
         fn test_serialization() {
             let meta = A::meta();
             let res = serde_json::to_string(&meta).unwrap();
-            assert_eq!("{\"EnumValue\":{\"id\":0,\"name\":\"A\",\"possible_variants\":[{\"name\":\"IntVal\",\"inner_type\":{\"TupleVariant\":{\"fields\":[\"I32Value\"]}}},{\"name\":\"StructVal\",\"inner_type\":{\"TupleVariant\":{\"fields\":[{\"name\":\"field\",\"inner_type\":\"BoolValue\"}]}}},{\"name\":\"UnitVal\",\"inner_type\":\"UnitVariant\"}]}}", res);
+            assert_eq!("{\"0\":{\"EnumValue\":{\"name\":\"A\",\"type_info\":{\"possible_variants\":[{\"name\":\"IntVal\",\"inner_type\":{\"TupleVariant\":{\"inner_types\":[{\"inner_type\":1}]}}},{\"name\":\"StructVal\",\"inner_type\":{\"StructVariant\":{\"fields\":[{\"name\":\"field\",\"inner_type\":2}]}}},{\"name\":\"UnitVal\",\"inner_type\":{\"UnitVariant\":[]}}]}}},\"1\":{\"I32Value\":[]},\"2\":{\"BoolValue\":[]}}", res);
         }
     }
 }
