@@ -1,5 +1,7 @@
 /// serde serializer support
 #[cfg(feature = "serde_ser")]
+mod number_indexed_type_information;
+#[cfg(feature = "serde_ser")]
 mod serde_ser;
 
 mod implementations;
