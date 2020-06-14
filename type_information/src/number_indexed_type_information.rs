@@ -253,8 +253,8 @@ type KnownTypeInfos = HashMap<u64, (TypeInformationRef, Option<TypeInformation>)
 
 /// takes the passed in typeInformation and converts it to a numbered type information,
 /// which is added to known_infos, unless it already was in there
-fn make_numbered<'a>(
-    ti: &super::TypeInformation<'a>,
+fn make_numbered(
+    ti: &super::TypeInformation,
     known_infos: &mut KnownTypeInfos,
 ) -> TypeInformationRef {
     let mut hasher = DefaultHasher::new();
@@ -307,21 +307,21 @@ fn make_numbered<'a>(
                     name,
                     type_info,
                 }) => TypeInformation::TupleStructValue(NamedTypeInformation::new(
-                    (*name).into(),
+                    name.clone(),
                     convert_tuple_types(type_info, known_infos),
                 )),
                 super::TypeInformation::StructValue(super::NamedTypeInformation {
                     name,
                     type_info,
                 }) => TypeInformation::StructValue(NamedTypeInformation::new(
-                    (*name).into(),
+                  name.clone(),
                     convert_fields(type_info, known_infos),
                 )),
                 super::TypeInformation::EnumValue(super::NamedTypeInformation {
                     name,
                     type_info,
                 }) => TypeInformation::EnumValue(NamedTypeInformation::new(
-                    (*name).into(),
+                    name.clone(),
                     convert_enum_type(type_info, known_infos),
                 )),
             };

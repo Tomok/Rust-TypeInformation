@@ -2,7 +2,7 @@ use super::number_indexed_type_information::numbered_type_informations_from_type
 use super::TypeInformation;
 use serde::{Serialize, Serializer};
 
-impl<'a> Serialize for TypeInformation<'a> {
+impl Serialize for TypeInformation {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -21,7 +21,7 @@ mod tests {
     #[test]
     fn simple_struct_serialize_test() {
         let to = TypeInformation::StructValue(NamedTypeInformation::new(
-            "TestObject",
+            "TestObject".to_owned(),
             Fields::new(Box::new([])),
         ));
         let res = serde_json::to_string(&to).unwrap();
@@ -33,17 +33,17 @@ mod tests {
 
     mod looped {
         use super::*;
-        fn get_test_struct() -> TypeInformation<'static> {
+        fn get_test_struct() -> TypeInformation {
             LOOPED_TEST_STRUCT.clone()
         }
 
         lazy_static! {
-            static ref FIELDS: Fields<'static> = Fields::new(Box::new([Field {
-                name: "a",
+            static ref FIELDS: Fields = Fields::new(Box::new([Field {
+                name: "a".to_owned(),
                 inner_type: get_test_struct,
             }]));
-            static ref LOOPED_TEST_STRUCT: TypeInformation<'static> =
-                TypeInformation::StructValue(NamedTypeInformation::new(&"A", FIELDS.clone()));
+            static ref LOOPED_TEST_STRUCT: TypeInformation =
+                TypeInformation::StructValue(NamedTypeInformation::new("A".to_owned(), FIELDS.clone()));
         }
 
         #[test]

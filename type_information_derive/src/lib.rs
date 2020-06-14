@@ -45,7 +45,7 @@ fn internal_derive_type_information(item: proc_macro2::TokenStream) -> proc_macr
     };
     let res = quote! {
         impl #lifet Meta for #ident #lifet {
-            fn meta() -> type_information::TypeInformation<'static> {
+            fn meta() -> type_information::TypeInformation {
                 #gen
             }
         }
@@ -60,7 +60,7 @@ fn derive_enum(ident: &syn::Ident, data_enum: syn::DataEnum) -> proc_macro2::Tok
     let strident = format!("{}", ident);
     let variants = derive_enum_variants(data_enum.variants);
     quote! {
-        type_information::TypeInformation::EnumValue(NamedTypeInformation::new(#strident, EnumType::new(#variants)))
+        type_information::TypeInformation::EnumValue(NamedTypeInformation::new(#strident.to_owned(), EnumType::new(#variants)))
     }
 }
 
@@ -102,7 +102,7 @@ fn derive_enum_variant(variant: &syn::Variant) -> proc_macro2::TokenStream {
     };
 
     quote! {
-        type_information::EnumVariant::new(#strident, #inner_type)
+        type_information::EnumVariant::new(#strident.to_owned(), #inner_type)
     }
 }
 
@@ -119,7 +119,7 @@ fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> proc_macro
             let fields = derive_fields_named(f);
             let res = quote! {
                 type_information::TypeInformation::StructValue(
-                    type_information::NamedTypeInformation::new( #strident, #fields)
+                    type_information::NamedTypeInformation::new( #strident.to_owned(), #fields)
                 )
             };
             res
@@ -128,7 +128,7 @@ fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> proc_macro
             let fields = derive_fields_unnamed(f);
             let res = quote! {
                 type_information::TypeInformation::TupleStructValue(
-                    type_information::NamedTypeInformation::new(#strident,
+                    type_information::NamedTypeInformation::new(#strident.to_owned(),
                         type_information::TupleTypes::new(#fields))
                 )
             };
@@ -136,7 +136,7 @@ fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> proc_macro
         }
         syn::Fields::Unit => {
             let res = quote! {
-                type_information::TypeInformation::UnitStructValue( type_information::UnitStructType::new( #strident, () ))
+                type_information::TypeInformation::UnitStructValue( type_information::UnitStructType::new( #strident.to_owned(), () ))
             };
             res
         }
@@ -230,7 +230,7 @@ fn derive_named_field(field: &syn::Field) -> proc_macro2::TokenStream {
     let type_info = type_to_meta(&field.ty);
     let map_res = quote! {
         type_information::Field::new(
-            #ident,
+            #ident.to_owned(),
             || #type_info
         )
     };
@@ -261,8 +261,8 @@ mod test {
         let res = internal_derive_type_information(input);
         let expectation = quote! {
             impl Meta for A {
-                fn meta() -> type_information::TypeInformation<'static> {
-                    type_information::TypeInformation::UnitStructValue( type_information::UnitStructType::new( "A", () ) )
+                fn meta() -> type_information::TypeInformation {
+                    type_information::TypeInformation::UnitStructValue( type_information::UnitStructType::new( "A".to_owned(), () ) )
                 }
             }
         };
@@ -275,9 +275,9 @@ mod test {
         let res = internal_derive_type_information(input);
         let expectation = quote! {
             impl Meta for A {
-                fn meta() -> type_information::TypeInformation<'static> {
+                fn meta() -> type_information::TypeInformation {
                     type_information::TypeInformation::StructValue(
-                        type_information::NamedTypeInformation::new("A",
+                        type_information::NamedTypeInformation::new("A".to_owned(),
                             type_information::Fields::new(Box::new([]))
                         )
                     )
@@ -293,9 +293,9 @@ mod test {
         let res = internal_derive_type_information(input);
         let expectation = quote! {
             impl Meta for A {
-                fn meta() -> type_information::TypeInformation<'static> {
+                fn meta() -> type_information::TypeInformation {
                     type_information::TypeInformation::TupleStructValue(
-                        type_information::NamedTypeInformation::new("A", type_information::TupleTypes::new(Box::new([
+                        type_information::NamedTypeInformation::new("A".to_owned(), type_information::TupleTypes::new(Box::new([
                             type_information::TupleType::new( || u8::meta() ),
                             type_information::TupleType::new( || u16::meta() ),
                             type_information::TupleType::new( || u32::meta() )
@@ -347,7 +347,7 @@ mod test {
         let input = quote! { struct A {f: [u8; 3]} };
         let res = internal_derive_type_information(input);
         let expected_fields = quote! {
-            type_information::Fields::new(Box::new([type_information::Field::new("f",
+            type_information::Fields::new(Box::new([type_information::Field::new("f".to_owned(),
                 || type_information::TypeInformation::TupleValue(
                     type_information::TupleTypes::new(Box::new([
                         type_information::TupleType::new( || u8::meta() ),
@@ -359,9 +359,9 @@ mod test {
         };
         let expectation = quote! {
             impl Meta for A {
-                fn meta() -> type_information::TypeInformation<'static> {
+                fn meta() -> type_information::TypeInformation {
                     type_information::TypeInformation::StructValue(
-                        type_information::NamedTypeInformation::new("A", #expected_fields)
+                        type_information::NamedTypeInformation::new("A".to_owned(), #expected_fields)
                     )
                 }
             }
@@ -375,10 +375,10 @@ mod test {
         let res = internal_derive_type_information(input);
         let expectation = quote! {
             impl Meta for A {
-                fn meta() -> type_information::TypeInformation<'static> {
+                fn meta() -> type_information::TypeInformation {
                     type_information::TypeInformation::StructValue(
-                        type_information::NamedTypeInformation::new("A",
-                            type_information::Fields::new(Box::new([ type_information::Field::new("f", || A::meta()) ]))
+                        type_information::NamedTypeInformation::new("A".to_owned(),
+                            type_information::Fields::new(Box::new([ type_information::Field::new("f".to_owned(), || A::meta()) ]))
                         )
                     )
                 }
