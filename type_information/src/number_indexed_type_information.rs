@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeMap, HashMap};
+use std::convert::{TryInto, TryFrom};
 use std::hash::{Hash, Hasher};
 
 type TypeInformationRef = usize;
@@ -225,11 +226,12 @@ pub enum TypeInformation {
     EnumValue(NamedTypeInformation<EnumType>),
 }
 
-pub type NumberedTypeInformations = std::collections::BTreeMap<usize, TypeInformation>;
 
-pub fn numbered_type_informations_from_type_information(
+pub type NumberedTypeInformationMap = std::collections::BTreeMap<usize, TypeInformation>;
+
+pub fn numbered_type_information_map_from_type_information(
     ti: &super::TypeInformation,
-) -> NumberedTypeInformations {
+) -> NumberedTypeInformationMap {
     let mut known_infos = KnownTypeInfos::new();
     let index = make_numbered(ti, &mut known_infos);
     assert_eq!(
@@ -247,6 +249,33 @@ pub fn numbered_type_informations_from_type_information(
         }
     }
     indexed_map
+}
+
+pub struct NumberedTypeInformations(Vec<TypeInformation>);
+
+impl TryFrom<NumberedTypeInformationMap> for NumberedTypeInformations {
+    type Error = &'static str;
+    fn try_from(mut value: NumberedTypeInformationMap) -> Result<Self, Self::Error> {
+        let ti_count = value.len();
+        let mut res_vec = Vec::with_capacity(ti_count);
+        for index in 0..ti_count {
+            //use remove instead of get to gain ownership
+            if let Some(type_info) = value.remove(&index) {
+                res_vec.push(type_info);
+            } else {
+                return Err("NumberedTypeInformationMap was not consecutive");
+            }
+        }
+        Ok(Self(res_vec))
+    }
+
+}
+
+pub fn numbered_type_informations_from_type_information(
+    ti: &super::TypeInformation
+) -> NumberedTypeInformations {
+    let ordered_map = numbered_type_information_map_from_type_information(ti);
+    ordered_map.try_into().expect("Internal Error: NumberedTypeInformationMap was not consecutive")
 }
 
 type KnownTypeInfos = HashMap<u64, (TypeInformationRef, Option<TypeInformation>)>;

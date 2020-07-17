@@ -1,5 +1,5 @@
-use super::number_indexed_type_information::numbered_type_informations_from_type_information;
 use super::TypeInformation;
+use super::number_indexed_type_information::numbered_type_information_map_from_type_information;
 use serde::{Serialize, Serializer};
 
 impl<'a> Serialize for TypeInformation<'a> {
@@ -7,7 +7,9 @@ impl<'a> Serialize for TypeInformation<'a> {
     where
         S: Serializer,
     {
-        let serializeable = numbered_type_informations_from_type_information(self);
+        //use NumberedTypeInformationMap instead of NumberedTypeInformation, to get explicit indices into serialized data,
+        // uses more space but makes it easier to read for text-based formats
+        let serializeable = numbered_type_information_map_from_type_information(self);
         serializeable.serialize(serializer)
     }
 }
