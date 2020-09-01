@@ -1,3 +1,6 @@
+//TODO: is there a way to make this private and still use it in the _derive module??
+pub mod generic_indexed_type_information;
+
 /// serde serializer support
 #[cfg(feature = "serde_ser")]
 mod number_indexed_type_information;
