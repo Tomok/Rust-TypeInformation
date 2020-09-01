@@ -1,10 +1,8 @@
 extern crate proc_macro;
 extern crate proc_macro2;
 use proc_macro::TokenStream;
-use quote::quote;
-use syn;
 
-extern crate type_information;
+mod extracted_type_information;
 
 #[proc_macro_derive(Meta)]
 /// automatically generates a `meta()` function for a given struct
@@ -21,369 +19,310 @@ pub fn derive_type_information(_item: TokenStream) -> TokenStream {
 /// logic, to make it unit testable, since proc_macro can not be used in the
 /// context of unit tests.
 fn internal_derive_type_information(item: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
-    let input: syn::DeriveInput = syn::parse2(item).unwrap();
-
-    //println!("Input {}: {:#?}", input.ident, input.data);
-    let ident = input.ident;
-
-    let lifetimes: Vec<&syn::Lifetime> = input.generics.lifetimes().map(|x| &x.lifetime).collect();
-    let has_lifetimes = !lifetimes.is_empty();
-
-    let lifet = if has_lifetimes {
-        quote! {<#(#lifetimes),*>}
-    } else {
-        quote! {}
-    };
-
-    let gen = match input.data {
-        syn::Data::Struct(data_struct) => derive_struct(&ident, data_struct),
-        syn::Data::Enum(data_enum) => derive_enum(&ident, data_enum),
-        _ => panic!(
-            "internal_derive_type_information: Not implemented for {:#?}",
-            input.data
-        ),
-    };
-    let res = quote! {
-        impl #lifet Meta for #ident #lifet {
-            fn meta() -> type_information::TypeInformation<'static> {
-                #gen
-            }
-        }
-    };
-    //println!("#######\nOutput:\n{}", res);
-    res
+    let extracted_info = type_info_extraction::extract_type_information(item);
+    todo!("generate code from extracted_info")
 }
 
-/// converts an enum token stream into tokens
-/// generating the corresponding `TypeInformation::EnumValue` meta data object
-fn derive_enum(ident: &syn::Ident, data_enum: syn::DataEnum) -> proc_macro2::TokenStream {
-    let strident = format!("{}", ident);
-    let variants = derive_enum_variants(data_enum.variants);
-    quote! {
-        type_information::TypeInformation::EnumValue(NamedTypeInformation::new(#strident, EnumType::new(#variants)))
+mod type_info_extraction {
+
+    use super::extracted_type_information::*;
+
+    pub fn extract_type_information(item: proc_macro2::TokenStream) -> ExtractedTypeInformation {
+        let input: syn::DeriveInput = syn::parse2(item).unwrap();
+
+        let ident = format!("{}", input.ident);
+
+        let lifetimes = input.generics.lifetimes().map(|x| x.into()).collect();
+
+        let type_info = match input.data {
+            syn::Data::Struct(data_struct) => derive_struct(&input.ident, data_struct),
+            syn::Data::Enum(data_enum) => derive_enum(&input.ident, data_enum),
+            _ => panic!(
+                "internal_derive_type_information: Not implemented for {:#?}",
+                input.data
+            ),
+        };
+        ExtractedTypeInformation {
+            ident,
+            lifetimes,
+            type_info,
+        }
     }
-}
 
-/// converts the variants in an enum token stream into tokens
-/// generating the corresponding array of EnumVariantTypes for a meta data object
-fn derive_enum_variants(
-    variants: syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>,
-) -> proc_macro2::TokenStream {
-    let variants_iter = variants.iter().map(|v| derive_enum_variant(v));
-
-    quote! {
-        Box::new([#(#variants_iter),*])
+    /// converts an enum token stream into
+    /// the corresponding `TypeInformation::EnumValue` meta data object
+    fn derive_enum(ident: &syn::Ident, data_enum: syn::DataEnum) -> TypeInformation {
+        let strident = format!("{}", ident);
+        let variants = derive_enum_variants(data_enum.variants);
+        TypeInformation::EnumValue(NamedTypeInformation::new(strident, EnumType::new(variants)))
     }
-}
 
-/// converts an enum variant token stream into tokens
-/// generating the corresponding meta data object
-/// Which is a `EnumVariantType`
-fn derive_enum_variant(variant: &syn::Variant) -> proc_macro2::TokenStream {
-    let strident = format!("{}", variant.ident);
-    let inner_type = match &variant.fields {
-        syn::Fields::Named(f) => {
-            let fields = derive_fields_named(f);
-            quote! {
-                type_information::EnumVariantType::StructVariant(#fields)
-            }
-        }
-        syn::Fields::Unnamed(f) => {
-            let fields = derive_fields_unnamed(f);
-            quote! {
-                type_information::EnumVariantType::TupleVariant(TupleTypes::new( #fields ))
-            }
-        }
-        syn::Fields::Unit => {
-            quote! {
-                type_information::EnumVariantType::UnitVariant()
-            }
-        }
-    };
-
-    quote! {
-        type_information::EnumVariant::new(#strident, #inner_type)
+    /// converts the variants in an enum token stream into
+    /// the corresponding array of EnumVariantTypes for a meta data object
+    fn derive_enum_variants(
+        variants: syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>,
+    ) -> Box<[EnumVariant]> {
+        let variants_iter = variants.iter().map(|v| derive_enum_variant(v));
+        let mut variants = Vec::with_capacity(variants.len());
+        variants.extend(variants_iter);
+        variants.into_boxed_slice()
     }
-}
 
-/// Converts the tokens of a named struct into tokens
-/// generating the corresponding meta object,
-/// which is one of:
-/// * TypeInformation::StructValue
-/// * TypeInformation::TupleStructValue
-/// * TypeInformation::UnitStructValue
-fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> proc_macro2::TokenStream {
-    let strident = format!("{}", ident);
-    match &data_struct.fields {
-        syn::Fields::Named(f) => {
-            let fields = derive_fields_named(f);
-            let res = quote! {
-                type_information::TypeInformation::StructValue(
-                    type_information::NamedTypeInformation::new( #strident, #fields)
-                )
+    /// converts an enum variant token stream into
+    /// the corresponding meta data object
+    /// Which is a `EnumVariant`
+    fn derive_enum_variant(variant: &syn::Variant) -> EnumVariant {
+        let strident = format!("{}", variant.ident);
+        let inner_type = match &variant.fields {
+            syn::Fields::Named(f) => {
+                let fields = derive_fields_named(f);
+                EnumVariantType::StructVariant(fields)
+            }
+            syn::Fields::Unnamed(f) => {
+                let fields = derive_fields_unnamed(f);
+                EnumVariantType::TupleVariant(TupleTypes::new(fields))
+            }
+            syn::Fields::Unit => EnumVariantType::UnitVariant(),
+        };
+
+        EnumVariant::new(strident, inner_type)
+    }
+
+    /// Converts the tokens of a named struct into
+    /// the corresponding meta object,
+    /// which is one of:
+    /// * TypeInformation::StructValue
+    /// * TypeInformation::TupleStructValue
+    /// * TypeInformation::UnitStructValue
+    fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> TypeInformation {
+        let strident = format!("{}", ident);
+        match &data_struct.fields {
+            syn::Fields::Named(f) => {
+                let fields = derive_fields_named(f);
+                let res = TypeInformation::StructValue(NamedTypeInformation::new(strident, fields));
+                res
+            }
+            syn::Fields::Unnamed(f) => {
+                let fields = derive_fields_unnamed(f);
+                let res = TypeInformation::TupleStructValue(NamedTypeInformation::new(
+                    strident,
+                    TupleTypes::new(fields),
+                ));
+                res
+            }
+            syn::Fields::Unit => {
+                TypeInformation::UnitStructValue(UnitStructType::new(strident, ()))
+            }
+        }
+    }
+
+    /// Converts the tokens describing named fields of a struct
+    /// (or struct variant of an enum), into
+    /// the corresponding meta data, i.e. a Fields object
+    fn derive_fields_named(fields: &syn::FieldsNamed) -> Fields {
+        let fields_iter = fields.named.iter().map(|f| derive_named_field(f));
+        let mut fields = std::vec::Vec::with_capacity(fields.named.len());
+        fields.extend(fields_iter);
+        Fields::new(fields.into_boxed_slice())
+    }
+
+    /// Converts the tokens describing named fields of a tuple
+    /// (or tuple variant of an enum), into
+    /// the corresponding meta data, i.e. a reference to an array of references
+    /// to the corresponding meta data type objects
+    fn derive_fields_unnamed(fields: &syn::FieldsUnnamed) -> Box<[TupleType]> {
+        let fields_iter = fields
+            .unnamed
+            .iter()
+            .map(|f| derive_unnamed_tuple_element(&f.ty));
+
+        let mut res_vec = Vec::with_capacity(fields.unnamed.len());
+        res_vec.extend(fields_iter);
+        res_vec.into_boxed_slice()
+    }
+
+    /// takes a given `syn::Path` and returns the corresponding
+    /// TypeInfoOrRef::Reference describing the path to the referenced object.
+    /// Does not check, if a meta object exists for that path!
+    fn path_to_meta(path: &syn::TypePath) -> TypeInfoOrRef {
+        TypeInfoOrRef::Reference(path.into())
+    }
+
+    /// takes a given `syn::TypeArray` and returns the corresponding
+    /// `type_information::TypeInformation::TupleValue`
+    /// representing the array.
+    fn array_to_meta(a: &syn::TypeArray) -> TypeInformation {
+        if let syn::Expr::Lit(syn::ExprLit {
+            lit: syn::Lit::Int(lit),
+            ..
+        }) = &a.len
+        {
+            let size = lit.base10_parse().expect("Could not parse array size");
+            let t = type_to_meta(&*a.elem);
+            let tt = TupleType::new(t);
+            //quote! { type_information::TupleType::new( || #t ) };
+            let mut repeated_vec = std::vec::Vec::with_capacity(size);
+            repeated_vec.extend(std::iter::repeat(tt).take(size));
+            assert_eq!(size, repeated_vec.len());
+            let repeated = repeated_vec.into_boxed_slice();
+            TypeInformation::TupleValue(TupleTypes::new(repeated))
+        } else {
+            panic!(
+                "Only integer literals are supported as array length right now, but found a {:#?}",
+                a.len
+            );
+        }
+    }
+
+    /// takes a `syn::Type` and returns a corresponding TypeInfoOrRef
+    fn type_to_meta(ty: &syn::Type) -> TypeInfoOrRef {
+        match ty {
+            syn::Type::Path(p) => path_to_meta(&p),
+            syn::Type::Array(a) => array_to_meta(&a).into(),
+            syn::Type::Reference(syn::TypeReference { elem: t, .. }) => type_to_meta(&*t),
+            syn::Type::Slice(syn::TypeSlice { elem: t, .. }) => {
+                let inner = type_to_meta(&*t);
+                let seq_type = SeqType::new(inner);
+                TypeInformation::SeqValue(seq_type).into()
+            }
+            _ => panic!("type_to_meta: Not implemented for {:#?}", ty),
+        }
+    }
+
+    /// generates a `TokenStream` that creates the meta data for a given named field.
+    fn derive_named_field(field: &syn::Field) -> Field {
+        let x = field.ident.clone(); //TODO: is clone realy the only option here?
+        let ident = format!("{}", x.unwrap());
+        let type_info = type_to_meta(&field.ty);
+        Field::new(ident, type_info)
+    }
+
+    /// generates a `TokenStream` that creates the meta data for a given tuple element.
+    fn derive_unnamed_tuple_element(ty: &syn::Type) -> TupleType {
+        let type_info_meta = type_to_meta(ty);
+        TupleType::new(type_info_meta)
+    }
+
+    #[cfg(test)]
+    mod test {
+        use super::*;
+
+        use super::IntoTypeRef;
+        use quote::quote;
+        use syn::parse_quote;
+
+        #[test]
+        fn test_derive_serde_unit_struct() {
+            let input = quote! { struct A; };
+            let res = extract_type_information(input);
+            let expectation = ExtractedTypeInformation {
+                ident: "A".to_owned(),
+                lifetimes: vec![],
+                type_info: TypeInformation::UnitStructValue(UnitStructType::new(
+                    "A".to_owned(),
+                    (),
+                )),
             };
-            res
+            assert_eq!(res, expectation);
         }
-        syn::Fields::Unnamed(f) => {
-            let fields = derive_fields_unnamed(f);
-            let res = quote! {
-                type_information::TypeInformation::TupleStructValue(
-                    type_information::NamedTypeInformation::new(#strident,
-                        type_information::TupleTypes::new(#fields))
-                )
+
+        #[test]
+        fn test_derive_serde_empty_struct() {
+            let input = quote! { struct A {} };
+            let res = extract_type_information(input);
+            let expectation = ExtractedTypeInformation {
+                ident: "A".to_owned(),
+                lifetimes: vec![],
+                type_info: TypeInformation::StructValue(NamedTypeInformation::new(
+                    "A".to_owned(),
+                    Fields::new(Box::new([])),
+                )),
             };
-            res
+            assert_eq!(res, expectation);
         }
-        syn::Fields::Unit => {
-            let res = quote! {
-                type_information::TypeInformation::UnitStructValue( type_information::UnitStructType::new( #strident, () ))
+
+        #[test]
+        fn test_derive_tuple_struct() {
+            let input = quote! {struct A(u8, u16, u32); };
+            let res = extract_type_information(input);
+            let expectation = TypeInformation::TupleStructValue(NamedTypeInformation::new(
+                "A".to_owned(),
+                TupleTypes::new(Box::new([
+                    TupleType::new("u8".into_type_ref()),
+                    TupleType::new("u16".into_type_ref()),
+                    TupleType::new("u32".into_type_ref()),
+                ])),
+            ));
+            assert_eq!(res.type_info, expectation);
+        }
+
+        #[test]
+        fn test_type_to_meta_slice() {
+            let input = parse_quote! {[u8]};
+            let expectation: TypeInfoOrRef =
+                TypeInformation::SeqValue(SeqType::new("u8".into_type_ref())).into();
+
+            let res = type_to_meta(&input);
+
+            assert_eq!(res, expectation);
+        }
+
+        #[test]
+        fn test_array_to_meta() {
+            // as parse is not implemented for TypeArray, parse an ExprType and get the TypeArray from there
+            let typedef: syn::ExprType = parse_quote! { a: [u8; 2]};
+            let input = match *typedef.ty {
+                syn::Type::Array(a) => a,
+                _ => panic!("typedef was messed up and did not return an Array as type..."),
             };
-            res
+
+            let expectation = TypeInformation::TupleValue(TupleTypes::new(Box::new([
+                TupleType::new("u8".into_type_ref()),
+                TupleType::new("u8".into_type_ref()),
+            ])));
+
+            let res = array_to_meta(&input);
+
+            assert_eq!(res, expectation);
         }
-    }
-}
 
-/// Converts the tokens describing named fields of a struct
-/// (or struct variant of an enum), into a token stream generating
-/// the corresponding meta data, i.e. a Fields object
-fn derive_fields_named(fields: &syn::FieldsNamed) -> proc_macro2::TokenStream {
-    let fields_iter = fields.named.iter().map(|f| derive_named_field(f));
-
-    quote! {
-        type_information::Fields::new(Box::new([#(#fields_iter),*]))
-    }
-}
-
-/// Converts the tokens describing named fields of a tuple
-/// (or tuple variant of an enum), into a token stream generating
-/// the corresponding meta data, i.e. a reference to an array of references
-/// to the corresponding meta data type objects
-fn derive_fields_unnamed(fields: &syn::FieldsUnnamed) -> proc_macro2::TokenStream {
-    let fields_iter = fields
-        .unnamed
-        .iter()
-        .map(|f| derive_unnamed_tuple_element(&f.ty));
-
-    quote! {
-        Box::new([#(#fields_iter),*])
-    }
-}
-
-/// takes a given `syn::Path` and returns the corresponding
-/// `TokenStream` describing the path to the meta object,
-/// or if it is a simple type a corresponding TypeInformation
-/// object.
-///
-/// Does not check, if a meta object exists for that path!
-fn path_to_meta(path: &syn::Path) -> proc_macro2::TokenStream {
-    let res = quote! { #path::meta() };
-    res
-}
-
-/// takes a given `syn::TypeArray` and returns the corresponding
-/// `TokenStream` generating a `type_information::TypeInformation::TupleValue`
-/// representing the array.
-fn array_to_meta(a: &syn::TypeArray) -> proc_macro2::TokenStream {
-    if let syn::Expr::Lit(syn::ExprLit {
-        lit: syn::Lit::Int(lit),
-        ..
-    }) = &a.len
-    {
-        let size = lit.base10_parse().expect("Could not parse array size");
-        let t = type_to_meta(&*a.elem);
-        let tt = quote! { type_information::TupleType::new( || #t ) };
-        let fields_iter = std::iter::repeat(tt).take(size);
-        let repeated = quote! { Box::new([#(#fields_iter),*]) };
-        let res = quote! {
-            type_information::TypeInformation::TupleValue(type_information::TupleTypes::new( #repeated ))
-        };
-        res
-    } else {
-        panic!(
-            "Only integer literals are supported as array length right now, but found a {:#?}",
-            a.len
-        );
-    }
-}
-
-/// takes a `syn::Type` and returns a `TokenStream` generating the corresponding
-/// meta object
-fn type_to_meta(ty: &syn::Type) -> proc_macro2::TokenStream {
-    match ty {
-        syn::Type::Path(p) => path_to_meta(&p.path),
-        syn::Type::Array(a) => array_to_meta(&a),
-        syn::Type::Reference(syn::TypeReference { elem: t, .. }) => type_to_meta(&*t),
-        syn::Type::Slice(syn::TypeSlice { elem: t, .. }) => {
-            let inner = type_to_meta(&*t);
-            quote! {
-                type_information::TypeInformation::SeqValue(type_information::SeqType::new( || #inner ))
-            }
+        #[test]
+        fn test_derive_array_struct() {
+            let input = quote! { struct A {f: [u8; 3]} };
+            let res = extract_type_information(input);
+            let expected_fields = Fields::new(Box::new([Field::new(
+                "f".to_owned(),
+                TypeInformation::TupleValue(TupleTypes::new(Box::new([
+                    TupleType::new("u8".into_type_ref()),
+                    TupleType::new("u8".into_type_ref()),
+                    TupleType::new("u8".into_type_ref()),
+                ])))
+                .into(),
+            )]));
+            let expectation = ExtractedTypeInformation {
+                ident: "A".to_owned(),
+                lifetimes: vec![],
+                type_info: TypeInformation::StructValue(NamedTypeInformation::new(
+                    "A".to_owned(),
+                    expected_fields,
+                )),
+            };
+            assert_eq!(res, expectation);
         }
-        _ => panic!("type_to_meta: Not implemented for {:#?}", ty),
-    }
-}
 
-/// generates a `TokenStream` that creates the meta data for a given named field.
-fn derive_named_field(field: &syn::Field) -> proc_macro2::TokenStream {
-    let x = field.ident.clone(); //TODO: is clone realy the only option here?
-    let ident = format!("{}", x.unwrap());
-    let type_info = type_to_meta(&field.ty);
-    let map_res = quote! {
-        type_information::Field::new(
-            #ident,
-            || #type_info
-        )
-    };
-    map_res
-}
-
-/// generates a `TokenStream` that creates the meta data for a given tuple element.
-fn derive_unnamed_tuple_element(ty: &syn::Type) -> proc_macro2::TokenStream {
-    let type_info_meta = type_to_meta(ty);
-    let map_res = quote! {
-        type_information::TupleType::new(
-            || #type_info_meta
-        )
-    };
-    map_res
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    use quote::quote;
-    use syn::parse_quote;
-
-    #[test]
-    fn test_derive_serde_unit_struct() {
-        let input = quote! { struct A; };
-        let res = internal_derive_type_information(input);
-        let expectation = quote! {
-            impl Meta for A {
-                fn meta() -> type_information::TypeInformation<'static> {
-                    type_information::TypeInformation::UnitStructValue( type_information::UnitStructType::new( "A", () ) )
-                }
-            }
-        };
-        assert_eq!(res.to_string(), expectation.to_string());
-    }
-
-    #[test]
-    fn test_derive_serde_empty_struct() {
-        let input = quote! { struct A {} };
-        let res = internal_derive_type_information(input);
-        let expectation = quote! {
-            impl Meta for A {
-                fn meta() -> type_information::TypeInformation<'static> {
-                    type_information::TypeInformation::StructValue(
-                        type_information::NamedTypeInformation::new("A",
-                            type_information::Fields::new(Box::new([]))
-                        )
-                    )
-                }
-            }
-        };
-        assert_eq!(res.to_string(), expectation.to_string());
-    }
-
-    #[test]
-    fn test_derive_tuple_struct() {
-        let input = quote! {struct A(u8, u16, u32); };
-        let res = internal_derive_type_information(input);
-        let expectation = quote! {
-            impl Meta for A {
-                fn meta() -> type_information::TypeInformation<'static> {
-                    type_information::TypeInformation::TupleStructValue(
-                        type_information::NamedTypeInformation::new("A", type_information::TupleTypes::new(Box::new([
-                            type_information::TupleType::new( || u8::meta() ),
-                            type_information::TupleType::new( || u16::meta() ),
-                            type_information::TupleType::new( || u32::meta() )
-                        ])))
-                    )
-                }
-            }
-        };
-        assert_eq!(res.to_string(), expectation.to_string());
-    }
-
-    #[test]
-    fn test_type_to_meta_slice() {
-        let input = parse_quote! {[u8]};
-        let expectation = quote! {
-            type_information::TypeInformation::SeqValue(type_information::SeqType::new( || u8::meta() ))
-        };
-
-        let res = type_to_meta(&input);
-
-        assert_eq!(res.to_string(), expectation.to_string());
-    }
-
-    #[test]
-    fn test_array_to_meta() {
-        // as parse is not implemented for TypeArray, parse an ExprType and get the TypeArray from there
-        let typedef: syn::ExprType = parse_quote! { a: [u8; 2]};
-        let input = match *typedef.ty {
-            syn::Type::Array(a) => a,
-            _ => panic!("typedef was messed up and did not return an Array as type..."),
-        };
-
-        let expectation = quote! {
-            type_information::TypeInformation::TupleValue(
-                type_information::TupleTypes::new(Box::new([
-                    type_information::TupleType::new( || u8::meta() ),
-                    type_information::TupleType::new( || u8::meta() )
-                ]))
-            )
-        };
-
-        let res = array_to_meta(&input);
-
-        assert_eq!(res.to_string(), expectation.to_string());
-    }
-
-    #[test]
-    fn test_derive_array_struct() {
-        let input = quote! { struct A {f: [u8; 3]} };
-        let res = internal_derive_type_information(input);
-        let expected_fields = quote! {
-            type_information::Fields::new(Box::new([type_information::Field::new("f",
-                || type_information::TypeInformation::TupleValue(
-                    type_information::TupleTypes::new(Box::new([
-                        type_information::TupleType::new( || u8::meta() ),
-                        type_information::TupleType::new( || u8::meta() ),
-                        type_information::TupleType::new( || u8::meta() )
-                    ]))
-                )
-            )]))
-        };
-        let expectation = quote! {
-            impl Meta for A {
-                fn meta() -> type_information::TypeInformation<'static> {
-                    type_information::TypeInformation::StructValue(
-                        type_information::NamedTypeInformation::new("A", #expected_fields)
-                    )
-                }
-            }
-        };
-        assert_eq!(res.to_string(), expectation.to_string());
-    }
-
-    #[test]
-    fn test_derive_self_referencing_struct() {
-        let input = quote! { struct A { f: &A } };
-        let res = internal_derive_type_information(input);
-        let expectation = quote! {
-            impl Meta for A {
-                fn meta() -> type_information::TypeInformation<'static> {
-                    type_information::TypeInformation::StructValue(
-                        type_information::NamedTypeInformation::new("A",
-                            type_information::Fields::new(Box::new([ type_information::Field::new("f", || A::meta()) ]))
-                        )
-                    )
-                }
-            }
-        };
-        assert_eq!(res.to_string(), expectation.to_string());
+        #[test]
+        fn test_derive_self_referencing_struct() {
+            let input = quote! { struct A { f: &A } };
+            let res = extract_type_information(input);
+            let expectation = ExtractedTypeInformation {
+                ident: "A".to_owned(),
+                lifetimes: vec![],
+                type_info: TypeInformation::StructValue(NamedTypeInformation::new(
+                    "A".to_owned(),
+                    Fields::new(Box::new([Field::new("f".to_owned(), "A".into_type_ref())])),
+                )),
+            };
+            assert_eq!(res, expectation);
+        }
     }
 }
