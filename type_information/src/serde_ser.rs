@@ -1,5 +1,5 @@
-use super::TypeInformation;
 use super::number_indexed_type_information::numbered_type_information_map_from_type_information;
+use super::TypeInformation;
 use serde::{Serialize, Serializer};
 
 impl<'a> Serialize for TypeInformation<'a> {

@@ -1,8 +1,8 @@
+use super::generic_indexed_type_information;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeMap, HashMap};
-use std::convert::{TryInto, TryFrom};
+use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
-use super::generic_indexed_type_information;
 
 type TypeInformationRef = usize;
 //re-publish types from generic_indexed_type_information with TypeInformatioRef type filled
@@ -17,7 +17,6 @@ pub type TupleType = generic_indexed_type_information::TupleType<TypeInformation
 pub type TupleTypes = generic_indexed_type_information::TupleTypes<TypeInformationRef>;
 pub type EnumType = generic_indexed_type_information::EnumType<TypeInformationRef>;
 pub type TypeInformation = generic_indexed_type_information::TypeInformation<TypeInformationRef>;
-
 
 pub type NumberedTypeInformationMap = std::collections::BTreeMap<usize, TypeInformation>;
 
@@ -60,14 +59,15 @@ impl TryFrom<NumberedTypeInformationMap> for NumberedTypeInformations {
         }
         Ok(Self(res_vec))
     }
-
 }
 
 pub fn numbered_type_informations_from_type_information(
-    ti: &super::TypeInformation
+    ti: &super::TypeInformation,
 ) -> NumberedTypeInformations {
     let ordered_map = numbered_type_information_map_from_type_information(ti);
-    ordered_map.try_into().expect("Internal Error: NumberedTypeInformationMap was not consecutive")
+    ordered_map
+        .try_into()
+        .expect("Internal Error: NumberedTypeInformationMap was not consecutive")
 }
 
 type KnownTypeInfos = HashMap<u64, (TypeInformationRef, Option<TypeInformation>)>;
