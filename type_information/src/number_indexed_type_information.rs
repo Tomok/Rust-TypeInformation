@@ -1,235 +1,28 @@
-use serde::{Deserialize, Serialize};
-
+use super::generic_indexed_type_information;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeMap, HashMap};
+use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
 
 type TypeInformationRef = usize;
+//re-publish types from generic_indexed_type_information with TypeInformatioRef type filled
+pub type Field = generic_indexed_type_information::Field<TypeInformationRef>;
+pub type Fields = generic_indexed_type_information::Fields<TypeInformationRef>;
+pub type EnumVariantType = generic_indexed_type_information::EnumVariantType<TypeInformationRef>;
+pub type EnumVariant = generic_indexed_type_information::EnumVariant<TypeInformationRef>;
+pub use generic_indexed_type_information::NamedTypeInformation;
+pub use generic_indexed_type_information::UnitStructType;
+pub type SeqType = generic_indexed_type_information::SeqType<TypeInformationRef>;
+pub type TupleType = generic_indexed_type_information::TupleType<TypeInformationRef>;
+pub type TupleTypes = generic_indexed_type_information::TupleTypes<TypeInformationRef>;
+pub type EnumType = generic_indexed_type_information::EnumType<TypeInformationRef>;
+pub type TypeInformation = generic_indexed_type_information::TypeInformation<TypeInformationRef>;
 
-type TIBox<T> = Box<T>;
+pub type NumberedTypeInformationMap = std::collections::BTreeMap<usize, TypeInformation>;
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
-/// Field inside a struct
-pub struct Field {
-    name: String,
-    inner_type: TypeInformationRef,
-}
-
-impl<'a> Field {
-    pub fn new(name: String, inner_type: TypeInformationRef) -> Self {
-        Self { name, inner_type }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
-pub struct Fields {
-    fields: Box<[Field]>,
-}
-
-impl<'a> Fields {
-    pub const fn new(fields: Box<[Field]>) -> Self {
-        Self { fields }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
-/// Possible types contained in a enum.
-///
-/// If it contains no fields, it will be a `UnitVariant`.
-/// For tuple enums variants like A in:
-/// ```
-/// enum Foo {
-///   A(u8,u8),
-/// }
-/// ```
-/// A `TupleVariant` is used.
-///
-/// For struct enum variants like B in:
-/// ```
-/// enum Bar {
-///   B{ field: u8 },
-/// }
-/// ```
-/// A `StructVariant` is used.
-pub enum EnumVariantType {
-    /// Enum variant without any fields.
-    UnitVariant(),
-    /// Enum variant for tuples.
-    TupleVariant(TupleTypes),
-    /// Enum variant for variants containing named fields.
-    StructVariant(Fields),
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
-/// Meta Data for an enum variant
-pub struct EnumVariant {
-    name: String,
-    inner_type: EnumVariantType,
-}
-
-impl<'a> EnumVariant {
-    pub const fn new(name: String, inner_type: EnumVariantType) -> Self {
-        Self { name, inner_type }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
-pub struct NamedTypeInformation<I: Sized> {
-    name: String,
-    type_info: I,
-}
-
-impl<'a, I: Sized> NamedTypeInformation<I> {
-    pub const fn new(name: String, type_info: I) -> Self {
-        Self { name, type_info }
-    }
-}
-
-pub type UnitStructType = NamedTypeInformation<()>;
-
-#[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
-pub struct SeqType {
-    inner_type: TypeInformationRef,
-}
-
-impl SeqType {
-    pub fn new(inner_type: TypeInformationRef) -> Self {
-        Self { inner_type }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
-pub struct TupleType {
-    inner_type: TypeInformationRef,
-}
-
-impl<'a> TupleType {
-    pub fn new(inner_type: TypeInformationRef) -> Self {
-        Self { inner_type }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
-pub struct TupleTypes {
-    inner_types: TIBox<[TupleType]>,
-}
-
-impl TupleTypes {
-    pub fn new(inner_types: TIBox<[TupleType]>) -> Self {
-        Self { inner_types }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
-pub struct EnumType {
-    possible_variants: Box<[EnumVariant]>,
-}
-
-impl<'a> EnumType {
-    pub const fn new(possible_variants: Box<[EnumVariant]>) -> Self {
-        Self { possible_variants }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
-/// All possible kinds of TypeInformation delivered by `meta` function
-/// or contained in the structs returned by it.
-pub enum TypeInformation {
-    /// used for `bool` fields
-    BoolValue(),
-
-    /// used for `i8` fields
-    I8Value(),
-    /// used for `i16` fields
-    I16Value(),
-    /// used for `i32` fields
-    I32Value(),
-    /// used for `i64` fields
-    I64Value(),
-    /// used for `i128` fields
-    I128Value(),
-
-    /// used for `u8` fields
-    U8Value(),
-    /// used for `u16` fields
-    U16Value(),
-    /// used for `u32` fields
-    U32Value(),
-    /// used for `u64` fields
-    U64Value(),
-    /// used for `u128` fields
-    U128Value(),
-
-    /// used for `f32` fields
-    F32Value(),
-    /// used for `f64` fields
-    F64Value(),
-
-    /// used for `char` fields
-    CharValue(),
-
-    /// used for `str`
-    StringValue(),
-    // TODO should this remain, or is it just there because serde has it?
-    ByteArray(),
-
-    // TODO should this remain, or is it just there because serde has it?
-    OptionValue {
-        inner_type: TypeInformationRef,
-    },
-
-    // TODO: Unused -> Remove??
-    // used for empty types, i.e. `()`
-    // UnitValue(),
-    /// Used for Unit type fields inside a struct
-    ///
-    /// e.g. `f` in:
-    /// ```
-    /// struct Foo {
-    ///   f: (),
-    /// }
-    /// ```
-    UnitStructValue(UnitStructType),
-
-    // TODO: Unused -> Remove??
-    // NewTypeStructValue {
-    //     inner_type: &'static TypeInformation,
-    // },
-    // TODO: Unused -> Remove??
-    // NewTypeVariantValue {
-    //     inner_type: &'static TypeInformation,
-    // },
-    /// Used for all kinds of dynamically sized sequences,
-    /// e.g. `[u8]`
-    SeqValue(SeqType),
-
-    /// TupleValue used for tuples, also used for
-    /// arrays with known length, to be able to reflect
-    /// the length information
-    TupleValue(TupleTypes),
-    TupleStructValue(NamedTypeInformation<TupleTypes>),
-
-    // TODO: Unused -> Remove??
-    // MapValue {
-    //     key_type: &'static TypeInformation,
-    //     value_type: &'static TypeInformation,
-    // },
-    StructValue(NamedTypeInformation<Fields>),
-
-    /// Used for an Enum and contains all possible variants
-    /// of it.
-    ///
-    /// Note that SERDE does not know this type, as it does
-    /// not need to transfer the information, that a enum was
-    /// used, just which value it had.
-    EnumValue(NamedTypeInformation<EnumType>),
-}
-
-pub type NumberedTypeInformations = std::collections::BTreeMap<usize, TypeInformation>;
-
-pub fn numbered_type_informations_from_type_information(
+pub fn numbered_type_information_map_from_type_information(
     ti: &super::TypeInformation,
-) -> NumberedTypeInformations {
+) -> NumberedTypeInformationMap {
     let mut known_infos = KnownTypeInfos::new();
     let index = make_numbered(ti, &mut known_infos);
     assert_eq!(
@@ -247,6 +40,34 @@ pub fn numbered_type_informations_from_type_information(
         }
     }
     indexed_map
+}
+
+pub struct NumberedTypeInformations(Vec<TypeInformation>);
+
+impl TryFrom<NumberedTypeInformationMap> for NumberedTypeInformations {
+    type Error = &'static str;
+    fn try_from(mut value: NumberedTypeInformationMap) -> Result<Self, Self::Error> {
+        let ti_count = value.len();
+        let mut res_vec = Vec::with_capacity(ti_count);
+        for index in 0..ti_count {
+            //use remove instead of get to gain ownership
+            if let Some(type_info) = value.remove(&index) {
+                res_vec.push(type_info);
+            } else {
+                return Err("NumberedTypeInformationMap was not consecutive");
+            }
+        }
+        Ok(Self(res_vec))
+    }
+}
+
+pub fn numbered_type_informations_from_type_information(
+    ti: &super::TypeInformation,
+) -> NumberedTypeInformations {
+    let ordered_map = numbered_type_information_map_from_type_information(ti);
+    ordered_map
+        .try_into()
+        .expect("Internal Error: NumberedTypeInformationMap was not consecutive")
 }
 
 type KnownTypeInfos = HashMap<u64, (TypeInformationRef, Option<TypeInformation>)>;
