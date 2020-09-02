@@ -4,8 +4,8 @@ type TIBox<T> = Box<T>;
 #[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
 /// Field inside a struct
 pub struct Field<TypeInformationRef> {
-    name: String,
-    inner_type: TypeInformationRef,
+    pub name: String,
+    pub inner_type: TypeInformationRef,
 }
 
 impl<'a, TypeInformationRef> Field<TypeInformationRef> {
@@ -16,7 +16,7 @@ impl<'a, TypeInformationRef> Field<TypeInformationRef> {
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
 pub struct Fields<TypeInformationRef> {
-    fields: Box<[Field<TypeInformationRef>]>,
+    pub fields: Box<[Field<TypeInformationRef>]>,
 }
 
 impl<'a, TypeInformationRef> Fields<TypeInformationRef> {
@@ -56,8 +56,8 @@ pub enum EnumVariantType<TypeInformationRef> {
 #[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
 /// Meta Data for an enum variant
 pub struct EnumVariant<TypeInformationRef> {
-    name: String,
-    inner_type: EnumVariantType<TypeInformationRef>,
+    pub name: String,
+    pub inner_type: EnumVariantType<TypeInformationRef>,
 }
 
 impl<'a, TypeInformationRef> EnumVariant<TypeInformationRef> {
@@ -68,8 +68,8 @@ impl<'a, TypeInformationRef> EnumVariant<TypeInformationRef> {
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
 pub struct NamedTypeInformation<I: Sized> {
-    name: String,
-    type_info: I,
+    pub name: String,
+    pub type_info: I,
 }
 
 impl<'a, I: Sized> NamedTypeInformation<I> {
@@ -82,7 +82,7 @@ pub type UnitStructType = NamedTypeInformation<()>;
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
 pub struct SeqType<TypeInformationRef> {
-    inner_type: TypeInformationRef,
+    pub inner_type: TypeInformationRef,
 }
 
 impl<TypeInformationRef> SeqType<TypeInformationRef> {
@@ -93,7 +93,7 @@ impl<TypeInformationRef> SeqType<TypeInformationRef> {
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
 pub struct TupleType<TypeInformationRef> {
-    inner_type: TypeInformationRef,
+    pub inner_type: TypeInformationRef,
 }
 
 impl<'a, TypeInformationRef> TupleType<TypeInformationRef> {
@@ -104,7 +104,7 @@ impl<'a, TypeInformationRef> TupleType<TypeInformationRef> {
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
 pub struct TupleTypes<TypeInformationRef> {
-    inner_types: TIBox<[TupleType<TypeInformationRef>]>,
+    pub inner_types: TIBox<[TupleType<TypeInformationRef>]>,
 }
 
 impl<TypeInformationRef> TupleTypes<TypeInformationRef> {
@@ -115,7 +115,7 @@ impl<TypeInformationRef> TupleTypes<TypeInformationRef> {
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
 pub struct EnumType<TypeInformationRef> {
-    possible_variants: Box<[EnumVariant<TypeInformationRef>]>,
+    pub possible_variants: Box<[EnumVariant<TypeInformationRef>]>,
 }
 
 impl<'a, TypeInformationRef> EnumType<TypeInformationRef> {
