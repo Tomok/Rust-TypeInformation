@@ -4,6 +4,8 @@ use proc_macro::TokenStream;
 
 mod extracted_type_information;
 mod type_info_extraction;
+mod type_info_to_tokenstream;
+use type_info_to_tokenstream::ToTokens;
 
 #[proc_macro_derive(Meta)]
 /// automatically generates a `meta()` function for a given struct
@@ -21,5 +23,5 @@ pub fn derive_type_information(_item: TokenStream) -> TokenStream {
 /// context of unit tests.
 fn internal_derive_type_information(item: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
     let extracted_info = type_info_extraction::extract_type_information(item);
-    todo!("generate code from extracted_info")
+    extracted_info.to_tokens()
 }
