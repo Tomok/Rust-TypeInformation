@@ -72,16 +72,14 @@ fn derive_struct(ident: &syn::Ident, data_struct: syn::DataStruct) -> TypeInform
     match &data_struct.fields {
         syn::Fields::Named(f) => {
             let fields = derive_fields_named(f);
-            let res = TypeInformation::StructValue(NamedTypeInformation::new(strident, fields));
-            res
+            TypeInformation::StructValue(NamedTypeInformation::new(strident, fields))
         }
         syn::Fields::Unnamed(f) => {
             let fields = derive_fields_unnamed(f);
-            let res = TypeInformation::TupleStructValue(NamedTypeInformation::new(
+            TypeInformation::TupleStructValue(NamedTypeInformation::new(
                 strident,
                 TupleTypes::new(fields),
-            ));
-            res
+            ))
         }
         syn::Fields::Unit => TypeInformation::UnitStructValue(UnitStructType::new(strident, ())),
     }
