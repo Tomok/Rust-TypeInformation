@@ -1,5 +1,3 @@
-use syn;
-
 extern crate type_information;
 use type_information::generic_indexed_type_information;
 

@@ -3,7 +3,6 @@ extern crate proc_macro2;
 use super::extracted_type_information::*;
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
-use syn;
 
 pub trait ToTokens {
     fn to_tokens(&self) -> TokenStream;
@@ -238,7 +237,6 @@ mod test {
 
     use super::IntoTypeRef;
     use quote::quote;
-    use syn::parse_quote;
 
     #[test]
     fn test_tokenize_unit_struct() {
