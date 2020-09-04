@@ -85,7 +85,7 @@ fn make_numbered<'a>(
     let known_infos_entry = known_infos.get(&ti_hash);
 
     match known_infos_entry {
-        Some((id, _)) => id.clone(),
+        Some((id, _)) => *id,
         None => {
             let index_no = known_infos.len();
             //temporarely register self in known_infos
