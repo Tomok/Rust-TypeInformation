@@ -23,7 +23,7 @@ pub struct TypePath(pub Box<[String]>);
 
 impl TypePath {
     //convert to TypeInfoOrRef::Refernce
-    pub fn as_ti_ref(self) -> TypeInfoOrRef {
+    pub fn to_ti_ref(self) -> TypeInfoOrRef {
         TypeInfoOrRef::Reference(self)
     }
 }
